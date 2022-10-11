@@ -93,3 +93,12 @@ class Report(models.Model):
 
     def __str__(self):
         return self.trainee.username + " - " + str(self.date)
+
+
+class RealTimeReport(models.Model):
+
+    id = models.AutoField(primary_key=True)
+    correctness = models.FloatField()
+    progress = models.FloatField()
+    repetition = models.IntegerField()
+    repetition_half = models.IntegerField()
