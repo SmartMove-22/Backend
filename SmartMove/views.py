@@ -8,10 +8,13 @@ from django.contrib.auth import authenticate
 
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
-from SmartMove.models import Trainee, Coach
-from SmartMove.serializers import UserSerializer, TraineeSerializer, CoachSerializer, ExerciseSerializer
+from SmartMove.models import Trainee, Coach, Report
+from SmartMove.serializers import UserSerializer, TraineeSerializer, CoachSerializer, ExerciseSerializer, \
+    ReportSerializer
 
 from django.core.exceptions import ObjectDoesNotExist
+
+import datetime
 
 all_tokens = {}
 
@@ -298,6 +301,42 @@ def user_type(request):
 
 # --- Trainee Endpoints
 
+@api_view(['GET'])
+def trainee_coaches(request):
+
+    check_token(request)
+
+    if "username" not in request.data or "coach_username" not in request.data:
+        return Response({
+            "Message": "Missing username (trainee or coach)",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    username = request.data['username']
+
+    # Check if trainee
+    if obtain_user_type(username) != "TRAINEE":
+        return Response({
+            "Message": "User is not a trainee",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        # Obtain coaches
+        coaches = Coach.objects.all()
+
+        return Response({
+            "Message": "Coaches Obtained",
+            "Content": CoachSerializer(coaches, many=True).data,
+            "Code": "HTTP_200_OK",
+        }, status=status.HTTP_200_OK)
+
+    except ObjectDoesNotExist:
+        return Response({
+            "Message": "No coaches available",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
 
 @api_view(['GET', 'PUT', 'DELETE'])
 def trainee_coach(request):
@@ -426,8 +465,132 @@ def assigned_exercises(request):
 
 @api_view(['GET'])
 def exercises_report(request):
-    pass
+
+    check_token(request)
+
+    if "username" not in request.data or "coach_username" not in request.data:
+        return Response({
+            "Message": "Missing username (trainee or coach)",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    username = request.data['username']
+
+    # Check if trainee
+    if obtain_user_type(username) != "TRAINEE":
+        return Response({
+            "Message": "User is not a trainee",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    # Get report
+    try:
+        user = User.objects.get(username=username)
+        trainee = Trainee.objects.get(user=user)
+
+        date = datetime.datetime.now()
+        if "date" in request.data:
+            date = request.data['date']
+
+        reports = Report.objects.get(trainee=trainee, date=date)
+
+        return Response({
+            "Message": "Report Obtained for " + date,
+            "Content": ReportSerializer(reports, many=True).data,
+            "Code": "HTTP_200_OK",
+        }, status=status.HTTP_200_OK)
+
+    except ObjectDoesNotExist:
+        return Response({
+            "Message": "No exercises",
+            "Code": "HTTP_200_OK",
+        }, status=status.HTTP_200_OK)
+
+
+@api_view(['PATCH'])
+def trainee_weight(request):
+
+    check_token(request)
+
+    if "username" not in request.data or "coach_username" not in request.data:
+        return Response({
+            "Message": "Missing username (trainee or coach)",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    username = request.data['username']
+
+    # Check if trainee
+    if obtain_user_type(username) != "TRAINEE":
+        return Response({
+            "Message": "User is not a trainee",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    if "weight" not in request.data:
+        return Response({
+            "Message": "Missing weight",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    weight = request.data['weight']
+
+    user = User.objects.get(username=username)
+    trainee = Trainee.objects.get(user=user)
+    trainee.weight = weight
+    trainee.save()
+
+    return Response({
+        "Message": "Weight Updated Successfully",
+        "Code": "HTTP_200_OK",
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['PATCH'])
+def trainee_height(request):
+
+    check_token(request)
+
+    if "username" not in request.data or "coach_username" not in request.data:
+        return Response({
+            "Message": "Missing username (trainee or coach)",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    username = request.data['username']
+
+    # Check if trainee
+    if obtain_user_type(username) != "TRAINEE":
+        return Response({
+            "Message": "User is not a trainee",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    if "height" not in request.data:
+        return Response({
+            "Message": "Missing height",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    height = request.data['height']
+
+    user = User.objects.get(username=username)
+    trainee = Trainee.objects.get(user=user)
+    trainee.height = height
+    trainee.save()
+
+    return Response({
+        "Message": "Height Updated Successfully",
+        "Code": "HTTP_200_OK",
+    }, status=status.HTTP_200_OK)
 
 
 # --- Coach Endpoints
 
+@api_view(['GET'])
+def coach_assigned_exercises(request):
+
+    return Response({
+        "Message": request.data,
+        "Code": "HTTP_200_OK",
+    }, status=status.HTTP_200_OK)

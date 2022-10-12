@@ -17,6 +17,7 @@ class Exercise(models.Model):
     id = models.AutoField(primary_key=True)
     # One-to-many relationship with Coach
     name = models.CharField(max_length=50)
+    image = models.FileField()
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     sets = models.IntegerField()
     reps = models.IntegerField()
