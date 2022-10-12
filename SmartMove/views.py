@@ -5,8 +5,8 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from SmartMove.serializers import RealTimeReportSerializer
-from smart_move_analysis.reference_store import LandmarkData
-from smart_move_analysis.utils import landmark_list_angles
+from .smart_move_analysis.reference_store import LandmarkData
+from .smart_move_analysis.utils import landmark_list_angles
 
 
 @api_view(['POST'])
@@ -21,11 +21,15 @@ def exercise_analysis(request):
 
     knn_model = smartmoveConfig.knn_models[(exercise_category, repetition_half == 1)]
 
-    landmark_angles = landmark_list_angles([
-        LandmarkData(visibility=None, **coordinates) for coordinates in landmarks_coordinates
-    ])
-    correctness, most_divergent_angle_value, most_divergent_angle_idx = knn_model.correctness(landmark_angles)
-    progress = knn_model.progress(landmark_angles)
+    if knn_model:
+        landmark_angles = landmark_list_angles([
+            LandmarkData(visibility=None, **coordinates) for coordinates in landmarks_coordinates
+        ])
+        correctness, most_divergent_angle_value, most_divergent_angle_idx = knn_model.correctness(landmark_angles)
+        progress = knn_model.progress(landmark_angles)
+    else:
+        # TODO: error response
+        pass
 
     # TODO: repetitions aren't tracked yet (the value of 'repetition')
     repetition = 0

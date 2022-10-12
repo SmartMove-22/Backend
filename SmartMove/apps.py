@@ -1,14 +1,15 @@
 from django.apps import AppConfig
 
-from smart_move_analysis.reference_store import ReferenceStore
-from smart_move_analysis.knn import KNNRegressor
+from .smart_move_analysis.reference_store import ReferenceStore
+from .smart_move_analysis.knn import KNNRegressor
 
 
 class SmartmoveConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'SmartMove'
     
-    mongodb_connection_string = 'mongodb://localhost'
+    # TODO: hardcoded
+    mongodb_connection_string = 'mongodb://mongo:mongo@mongodb'
     reference_store = None
     knn_models = None
 
