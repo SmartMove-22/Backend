@@ -306,9 +306,9 @@ def trainee_coaches(request):
 
     check_token(request)
 
-    if "username" not in request.data or "coach_username" not in request.data:
+    if "username" not in request.data:
         return Response({
-            "Message": "Missing username (trainee or coach)",
+            "Message": "Missing username",
             "Code": "HTTP_400_BAD_REQUEST",
         }, status=status.HTTP_400_BAD_REQUEST)
 
@@ -343,9 +343,9 @@ def trainee_coach(request):
 
     check_token(request)
 
-    if "username" not in request.data or "coach_username" not in request.data:
+    if "username" not in request.data:
         return Response({
-            "Message": "Missing username (trainee or coach)",
+            "Message": "Missing username",
             "Code": "HTTP_400_BAD_REQUEST",
         }, status=status.HTTP_400_BAD_REQUEST)
 
@@ -377,6 +377,12 @@ def trainee_coach(request):
         }, status=status.HTTP_200_OK)
 
     elif request.method == 'PUT':
+
+        if "coach_username" not in request.data:
+            return Response({
+                "Message": "Missing coach username",
+                "Code": "HTTP_400_BAD_REQUEST",
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         coach_username = request.data['coach_username']
 
@@ -430,7 +436,7 @@ def assigned_exercises(request):
 
     check_token(request)
 
-    if "username" not in request.data or "coach_username" not in request.data:
+    if "username" not in request.data:
         return Response({
             "Message": "Missing username (trainee or coach)",
             "Code": "HTTP_400_BAD_REQUEST",
@@ -468,7 +474,7 @@ def exercises_report(request):
 
     check_token(request)
 
-    if "username" not in request.data or "coach_username" not in request.data:
+    if "username" not in request.data:
         return Response({
             "Message": "Missing username (trainee or coach)",
             "Code": "HTTP_400_BAD_REQUEST",
@@ -512,7 +518,7 @@ def trainee_weight(request):
 
     check_token(request)
 
-    if "username" not in request.data or "coach_username" not in request.data:
+    if "username" not in request.data:
         return Response({
             "Message": "Missing username (trainee or coach)",
             "Code": "HTTP_400_BAD_REQUEST",
@@ -551,7 +557,7 @@ def trainee_height(request):
 
     check_token(request)
 
-    if "username" not in request.data or "coach_username" not in request.data:
+    if "username" not in request.data:
         return Response({
             "Message": "Missing username (trainee or coach)",
             "Code": "HTTP_400_BAD_REQUEST",
