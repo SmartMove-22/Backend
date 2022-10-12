@@ -24,5 +24,7 @@ urlpatterns = [
     path('user/logout', views.logout),
     path('user/profile', views.profile),
     path('trainee/profile', views.trainee_profile),
+    path('trainee/coach', views.trainee_coach),
+    path('trainee/exercises', views.assigned_exercises),
     path('coach/profile', views.coach_profile),
 ]
