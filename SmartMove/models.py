@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 
 class Category(models.Model):
@@ -8,14 +9,14 @@ class Category(models.Model):
     sub_category = models.CharField(max_length=50)
 
     def __str__(self):
-        return self.name + " - " + self.sub_category
+        return self.category + " - " + self.sub_category
 
 
 class Exercise(models.Model):
-
+    
     id = models.AutoField(primary_key=True)
     # One-to-many relationship with Coach
-    name = models.CharField(max_length=50, primary_key=True)
+    name = models.CharField(max_length=50)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     sets = models.IntegerField()
     reps = models.IntegerField()
@@ -37,30 +38,18 @@ class AssignedExercise(Exercise):
     grade = models.IntegerField(default=0)
 
 
-class User(models.Model):
+# class AppUser(models.Model):
 
-    username = models.CharField(max_length=50, primary_key=True)
-    email = models.CharField(max_length=50)
-    password = models.CharField(max_length=50)
-    image = models.ImageField(upload_to='images/', default='images/default.jpg')
+#     username = models.CharField(max_length=50, primary_key=True)
+#     email = models.CharField(max_length=50)
+#     password = models.CharField(max_length=50)
+#     image = models.ImageField(upload_to='images/', default='images/default.jpg')
 
-    weight = models.IntegerField(default=0)
-    height = models.IntegerField(default=0)
+#     weight = models.IntegerField(default=0)
+#     height = models.IntegerField(default=0)
 
-    def __str__(self):
-        return self.username
-
-
-# Extends User
-class Trainee(User):
-
-    # Many-to-one relationship with Coach
-    coach = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
-
-    # Many-to-many relationship with Assigned_Exercise
-    assigned_exercises = models.ManyToManyField(AssignedExercise, null=True)
-
-    # One-to-many relationship with Report
+#     def __str__(self):
+#         return self.username
 
 
 # Extends User
@@ -69,10 +58,24 @@ class Coach(User):
     # One-to-many relationship with Trainee
 
     # Many-to-many relationship with Assigned_Exercise
-    assigned_exercises = models.ManyToManyField(AssignedExercise, null=True)
+    # assigned_exercises = models.ManyToManyField(AssignedExercise)
 
     # Many-to-many relationship with Exercise
-    available_exercises = models.ManyToManyField(Exercise, null=True)
+    coach_exercises = models.ManyToManyField(Exercise)
+
+
+# Extends User
+class Trainee(User):
+
+    # Many-to-one relationship with Coach
+    trainee_coach = models.ForeignKey(Coach, on_delete=models.CASCADE)
+
+    # Many-to-many relationship with Assigned_Exercise
+    assigned_exercises = models.ManyToManyField(AssignedExercise)
+
+    # One-to-many relationship with Report
+    weight = models.IntegerField(default=0)
+    height = models.IntegerField(default=0)
 
 
 class Report(models.Model):

@@ -15,7 +15,10 @@ Including another URLconf
 """
 # from django.contrib import admin
 from django.urls import path
+from SmartMove import views
 
 urlpatterns = [
     #    path('admin/', admin.site.urls),
+    path('coach/exercises', views.create_exercise),
+    path('coach/exercises', views.get_exercises)
 ]
