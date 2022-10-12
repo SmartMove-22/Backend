@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'SmartMove.apps.SmartmoveConfig',
+    'rest_framework_simplejwt',
 ]
 
 MIDDLEWARE = [
