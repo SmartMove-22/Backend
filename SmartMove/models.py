@@ -40,35 +40,32 @@ class AssignedExercise(Exercise):
 
 # class AppUser(models.Model):
 
-#     username = models.CharField(max_length=50, primary_key=True)
-#     email = models.CharField(max_length=50)
-#     password = models.CharField(max_length=50)
-#     image = models.ImageField(upload_to='images/', default='images/default.jpg')
+    # user = models.OneToOneField(User, on_delete=models.CASCADE)
+    # username = models.CharField(max_length=50, primary_key=True)
+    # email = models.CharField(max_length=50)
+    # password = models.CharField(max_length=50)
+    # image = models.FileField()
 
-#     weight = models.IntegerField(default=0)
-#     height = models.IntegerField(default=0)
-
-#     def __str__(self):
-#         return self.username
+    # def __str__(self):
+        # self.username
 
 
-# Extends User
-class Coach(User):
+class Coach(models.Model):
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
 
     # One-to-many relationship with Trainee
-
-    # Many-to-many relationship with Assigned_Exercise
-    # assigned_exercises = models.ManyToManyField(AssignedExercise)
 
     # Many-to-many relationship with Exercise
     coach_exercises = models.ManyToManyField(Exercise)
 
 
-# Extends User
-class Trainee(User):
+class Trainee(models.Model):
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
 
     # Many-to-one relationship with Coach
-    trainee_coach = models.ForeignKey(Coach, on_delete=models.CASCADE)
+    trainee_coach = models.ForeignKey(Coach, on_delete=models.CASCADE, null=True)
 
     # Many-to-many relationship with Assigned_Exercise
     assigned_exercises = models.ManyToManyField(AssignedExercise)
