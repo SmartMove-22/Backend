@@ -19,7 +19,10 @@ from SmartMove import views
 
 urlpatterns = [
     #    path('admin/', admin.site.urls),
-    path('register', views.register),
-    path('login', views.login),
-    path('logout', views.logout),
+    path('auth/register', views.register),
+    path('auth/login', views.login),
+    path('user/logout', views.logout),
+    path('user/profile', views.profile),
+    path('trainee/profile', views.trainee_profile),
+    path('coach/profile', views.coach_profile),
 ]
