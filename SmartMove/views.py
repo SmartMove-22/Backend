@@ -1,11 +1,11 @@
 from django.shortcuts import render
 from django.apps import apps
-from SmartMove.smart_move_analysis.reference_store import LandmarkData
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from SmartMove.serializers import RealTimeReportSerializer
+from smart_move_analysis.reference_store import LandmarkData
 from smart_move_analysis.utils import landmark_list_angles
 
 

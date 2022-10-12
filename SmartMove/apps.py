@@ -1,4 +1,5 @@
 from django.apps import AppConfig
+
 from smart_move_analysis.reference_store import ReferenceStore
 from smart_move_analysis.knn import KNNRegressor
 
