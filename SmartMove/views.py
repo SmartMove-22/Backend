@@ -19,7 +19,7 @@ def exercise_analysis(request):
 
     smartmoveConfig = apps.get_app_config('SmartMoveConfig')
 
-    knn_model = smartmoveConfig.knn_models[(exercise_category, repetition_half == 0)]
+    knn_model = smartmoveConfig.knn_models[(exercise_category, repetition_half == 1)]
 
     landmark_angles = landmark_list_angles([
         LandmarkData(visibility=None, **coordinates) for coordinates in landmarks_coordinates
@@ -27,9 +27,12 @@ def exercise_analysis(request):
     correctness, most_divergent_angle_value, most_divergent_angle_idx = knn_model.correctness(landmark_angles)
     progress = knn_model.progress(landmark_angles)
 
+    # TODO: repetitions aren't tracked yet (the value of 'repetition')
+    repetition = 0
     if progress > 0.95:
-        repetition_half = 1 - repetition_half
-        repetition = 1
+        repetition_half = 1 if repetition_half == 2 else 2
+        if repetition_half == 1:
+            repetition = 1
 
     # Convert to Python data types that can then be easily rendered into JSON (Example)
     response = RealTimeReportSerializer(correctness=correctness, progress=progress, repetition=repetition, repetition_half=repetition_half)
