@@ -20,4 +20,5 @@ from SmartMove import views
 urlpatterns = [
     #    path('admin/', admin.site.urls),
     path('coach/exercises', views.manage_exercise),
+    path('exercises/categories', views.exercises),
 ]

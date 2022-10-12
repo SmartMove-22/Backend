@@ -32,7 +32,7 @@ def create_category(data):
                 
 
 
-@api_view(['POST', 'GET', 'DEL'])
+@api_view(['POST', 'GET', 'DELETE'])
 def manage_exercise(request):
    
     if request.method=='POST':
@@ -74,26 +74,68 @@ def manage_exercise(request):
                 "Code": "HTTP_400_BAD_REQUEST",
             }, status=status.HTTP_400_BAD_REQUEST)
     
-    # if request.method=='DEL':
-    #     try:
-    #         id_exer = request.data['id_exer']
+    if request.method=='DELETE':
+        try:
+            id_exer = request.data['id']
 
-    #         # create a Exercise
-    #         exe = Exercise.objects.get(name=name, category=category, sets=sets, reps=reps, calories=calories)
+            # create a Exercise
+            exe = Exercise.objects.get(id=id_exer)
+            exe.delete()
             
-    #         return Response({
-    #             "Message": "Exercises Obtained",
-    #             "Content": ExerciseSerializer(exer, many=True).data,
-    #             "Code": "HTTP_200_OK",
-    #         }, status=status.HTTP_200_OK)
-    #     except ObjectDoesNotExist:
-    #         return Response({
-    #             "Message": "Exercise Table is Empty",
-    #             "Code": "HTTP_400_BAD_REQUEST",
-    #         }, status=status.HTTP_400_BAD_REQUEST)
+            return Response({
+                "Message": "Exercise Deleted",
+                "Code": "HTTP_200_OK",
+            }, status=status.HTTP_200_OK)
+        except ObjectDoesNotExist:
+            return Response({
+                "Message": "Exercise Not Found",
+                "Code": "HTTP_400_BAD_REQUEST",
+            }, status=status.HTTP_400_BAD_REQUEST)
 
 
 
+@api_view(['GET'])
+def get_categories():
+   
+    try:
+        cat = Category.objects.all() 
+        return Response({
+            "Message": "Exercises Obtained",
+            "Content": ExerciseSerializer(cat, many=True).data,
+            "Code": "HTTP_200_OK",
+        }, status=status.HTTP_200_OK)
+    except ObjectDoesNotExist:
+        return Response({
+            "Message": "Exercise Table is Empty",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST) 
+             
+   
+@api_view(['GET'])
+def exercises(request):
+   
+    name = request.data['name']
+
+    # create a category
+    category = request.data['category']['category']   
+    sub_category = request.data['category']['sub_category']
+    sets = request.data['sets']
+    reps = request.data['reps']
+    calories = request.data['calories']
+    
+    try:
+        cat = Category.objects.all() 
+        return Response({
+            "Message": "Exercises Obtained",
+            "Content": ExerciseSerializer(cat, many=True).data,
+            "Code": "HTTP_200_OK",
+        }, status=status.HTTP_200_OK)
+    except ObjectDoesNotExist:
+        return Response({
+            "Message": "Exercise Table is Empty",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST) 
+             
 
 # def search_exercise(request):
 
