@@ -15,7 +15,14 @@ Including another URLconf
 """
 # from django.contrib import admin
 from django.urls import path
+from SmartMove import views
 
 urlpatterns = [
     #    path('admin/', admin.site.urls),
+    path('auth/register', views.register),
+    path('auth/login', views.login),
+    path('user/logout', views.logout),
+    path('user/profile', views.profile),
+    path('trainee/profile', views.trainee_profile),
+    path('coach/profile', views.coach_profile),
 ]
