@@ -13,6 +13,7 @@ services:
     environment:
       - MONGO_INITDB_ROOT_USERNAME_FILE=/run/secrets/mongo_user
       - MONGO_INITDB_ROOT_PASSWORD_FILE=/run/secrets/mongo_pass
+    command: --auth
   db:
     image: postgres
     volumes:
@@ -25,7 +26,7 @@ services:
       - POSTGRES_PASSWORD=postgres
   api:
     build: .
-    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:80"
+    command: sh -c "python manage.py makemigrations && python manage.py migrate && python manage.py runserver 0.0.0.0:80"
     volumes:
       - .:/code
     ports:
