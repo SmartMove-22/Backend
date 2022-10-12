@@ -1,9 +1,12 @@
 from django.shortcuts import render
+from django.apps import apps
+from SmartMove.smart_move_analysis.reference_store import LandmarkData
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from SmartMove.serializers import RealTimeReportSerializer
+from smart_move_analysis.utils import landmark_list_angles
 
 
 @api_view(['POST'])
@@ -12,11 +15,24 @@ def exercise_analysis(request):
     time = int(request.data['time'])
     repetition_half = int(request.data['repetition_half'])
     exercise_category = request.data['exercise_category']
-    left_shoulder = request.data['LEFT_SHOULDER']
-    right_shoulder = request.data['RIGHT_SHOULDER']
+    landmarks_coordinates = [request.data[str(i)] for i in range(33)]
+
+    smartmoveConfig = apps.get_app_config('SmartMoveConfig')
+
+    knn_model = smartmoveConfig.knn_models[(exercise_category, repetition_half == 0)]
+
+    landmark_angles = landmark_list_angles([
+        LandmarkData(visibility=None, **coordinates) for coordinates in landmarks_coordinates
+    ])
+    correctness, most_divergent_angle_value, most_divergent_angle_idx = knn_model.correctness(landmark_angles)
+    progress = knn_model.progress(landmark_angles)
+
+    if progress > 0.95:
+        repetition_half = 1 - repetition_half
+        repetition = 1
 
     # Convert to Python data types that can then be easily rendered into JSON (Example)
-    response = RealTimeReportSerializer(correctness=0, progress=0, repetition=0, repetition_half=0)
+    response = RealTimeReportSerializer(correctness=correctness, progress=progress, repetition=repetition, repetition_half=repetition_half)
 
     return Response(response, status=status.HTTP_200_OK)
 
