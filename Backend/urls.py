@@ -25,4 +25,5 @@ urlpatterns = [
     path('user/profile', views.profile),
     path('trainee/profile', views.trainee_profile),
     path('coach/profile', views.coach_profile),
+    path('trainee/exercise/<int:exerciseId>/data', views.exercise_analysis),
 ]
