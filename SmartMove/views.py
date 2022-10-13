@@ -41,7 +41,8 @@ def get_tokens_for_user(user):
     return token
 
 
-def token_is_valid(request):
+def check_token(request):
+
     # Check headers
     if "Authorization" not in request.headers or len(request.headers["Authorization"].split()) != 2:
         return False
@@ -56,14 +57,6 @@ def token_is_valid(request):
         return False
 
     return True
-
-
-def check_token(request):
-    if not token_is_valid(request):
-        return Response({
-            "Message": "Invalid token",
-            "Code": "HTTP_400_BAD_REQUEST",
-        }, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['POST'])
@@ -136,9 +129,17 @@ def login(request):
 
 @api_view(['POST'])
 def logout(request):
+    global all_tokens
+
     check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
 
     username = get_username(request)
+
     all_tokens[username] = None
 
     return Response({
@@ -150,8 +151,12 @@ def logout(request):
 @api_view(['GET'])
 def profile(request):
     check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
 
-    # Get username
     username = get_username(request)
 
     user = User.objects.get(username=username)
@@ -171,8 +176,12 @@ def profile(request):
 @api_view(['GET'])
 def trainee_profile(request):
     check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
 
-    # Get username
     username = get_username(request)
 
     user = User.objects.get(username=username)
@@ -206,8 +215,12 @@ def trainee_profile(request):
 @api_view(['GET'])
 def coach_profile(request):
     check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
 
-    # Get username
     username = get_username(request)
 
     user = User.objects.get(username=username)
@@ -270,9 +283,14 @@ def obtain_user_type(username):
 @api_view(['GET'])
 def user_type(request):
     check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
 
-    # Get username
     username = get_username(request)
+
     account_type = obtain_user_type(username)
 
     if account_type:
@@ -293,8 +311,12 @@ def user_type(request):
 @api_view(['GET'])
 def trainee_coaches(request):
     check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
 
-    # Get username
     username = get_username(request)
 
     # Check if trainee
@@ -324,8 +346,12 @@ def trainee_coaches(request):
 @api_view(['GET', 'PUT', 'DELETE'])
 def trainee_coach(request):
     check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
 
-    # Get username
     username = get_username(request)
 
     # Check if trainee
@@ -411,6 +437,11 @@ def trainee_coach(request):
 @api_view(['GET'])
 def assigned_exercises(request):
     check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
 
     username = get_username(request)
 
@@ -442,8 +473,12 @@ def assigned_exercises(request):
 @api_view(['GET'])
 def exercises_report(request):
     check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
 
-    # Get username
     username = get_username(request)
 
     # Check if trainee
@@ -487,8 +522,12 @@ def update_exercise(request):
 @api_view(['PATCH'])
 def trainee_weight(request):
     check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
 
-    # Get username
     username = get_username(request)
 
     # Check if trainee
@@ -520,8 +559,12 @@ def trainee_weight(request):
 @api_view(['PATCH'])
 def trainee_height(request):
     check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
 
-    # Get username
     username = get_username(request)
 
     # Check if trainee
@@ -555,8 +598,12 @@ def trainee_height(request):
 @api_view(['GET'])
 def coach_assigned_exercises(request):
     check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
 
-    # Get username
     username = get_username(request)
 
     # Check if coach
@@ -595,8 +642,12 @@ def coach_assigned_exercises(request):
 @api_view(['GET'])
 def coach_assigned_exercises_trainee(request, traineeId):
     check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
 
-    # Get username
     username = get_username(request)
 
     # Check if coach
@@ -629,8 +680,12 @@ def coach_assigned_exercises_trainee(request, traineeId):
 @api_view(['GET', 'POST', 'DELETE'])
 def coach_exercises(request):
     check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
 
-    # Get username
     username = get_username(request)
 
     # Check if coach
@@ -717,8 +772,12 @@ def coach_exercises(request):
 @api_view(['POST', 'DELETE'])
 def coach_manage_exercise(request, traineeId, exerciseId):
     check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
 
-    # Get username
     username = get_username(request)
 
     # Check if coach
@@ -784,8 +843,12 @@ def coach_manage_exercise(request, traineeId, exerciseId):
 @api_view(['PATCH'])
 def evaluate_exercise(request, traineeId, exerciseId):
     check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
 
-    # Get username
     username = get_username(request)
 
     user = User.objects.get(username=username)
