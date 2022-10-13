@@ -39,18 +39,6 @@ class Exercise(models.Model):
         return self.name
 
 
-# Extends Exercise
-class AssignedExercise(Exercise):
-
-    # Many-to-many relationship with Trainee
-    completed = models.BooleanField(default=False)
-    correctness = models.FloatField(default=0)
-    performance = models.FloatField(default=0)
-    improvement = models.FloatField(default=0)
-    calories_burned = models.IntegerField(default=0)
-    grade = models.IntegerField(default=0)
-
-
 class Trainee(models.Model):
 
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -59,12 +47,24 @@ class Trainee(models.Model):
     trainee_coach = models.ForeignKey(Coach, on_delete=models.CASCADE, null=True)
 
     # Many-to-many relationship with Assigned_Exercise
-    assigned_exercises = models.ManyToManyField(AssignedExercise)
 
     # One-to-many relationship with Report
 
     weight = models.IntegerField(default=0)
     height = models.IntegerField(default=0)
+
+
+# Extends Exercise
+class AssignedExercise(Exercise):
+
+    trainee = models.ManyToManyField(Trainee)
+    # Many-to-many relationship with Trainee
+    completed = models.BooleanField(default=False)
+    correctness = models.FloatField(default=0)
+    performance = models.FloatField(default=0)
+    improvement = models.FloatField(default=0)
+    calories_burned = models.IntegerField(default=0)
+    grade = models.IntegerField(default=0)
 
 
 class Report(models.Model):

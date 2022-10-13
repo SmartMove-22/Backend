@@ -8,9 +8,9 @@ from django.contrib.auth import authenticate
 
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
-from SmartMove.models import Trainee, Coach, Report, Exercise
+from SmartMove.models import Trainee, Coach, Report, Exercise, Category, AssignedExercise
 from SmartMove.serializers import UserSerializer, TraineeSerializer, CoachSerializer, ExerciseSerializer, \
-    ReportSerializer
+    ReportSerializer, AssignedExerciseSerializer
 
 from django.core.exceptions import ObjectDoesNotExist
 
@@ -20,6 +20,7 @@ all_tokens = {}
 
 
 def get_username(request):
+
     token = request.headers['Authorization'].split(' ')[1]
     username = [key for key, value in all_tokens.items() if value == token]
     if len(username) == 0:
@@ -46,11 +47,8 @@ def token_is_valid(request):
     if "Authorization" not in request.headers or len(request.headers["Authorization"].split()) != 2:
         return False
 
-    # Get provided token
-    token = request.headers['Authorization'].split(' ')[1]
-
     # Get user
-    username = get_username(token)
+    username = get_username(request)
     if not username:
         return False
 
@@ -433,7 +431,7 @@ def assigned_exercises(request):
     try:
         user = User.objects.get(username=username)
         trainee = Trainee.objects.get(user=user)
-        exercises = trainee.assigned_exercises
+        exercises = AssignedExercise.objects.get(trainee=trainee)
 
         return Response({
             "Message": "Exercises Obtained",
@@ -568,13 +566,68 @@ def coach_assigned_exercises(request):
             "Code": "HTTP_400_BAD_REQUEST",
         }, status=status.HTTP_400_BAD_REQUEST)
 
+    user = User.objects.get(username=username)
+    coach = Coach.objects.get(user=user)
+
+    try:
+        exercises = AssignedExercise.objects.get(coach=coach)
+        return Response({
+            "Message": "Assigned Exercises Obtained",
+            "Content": AssignedExerciseSerializer(exercises, many=True).data,
+            "Code": "HTTP_200_OK",
+        }, status=status.HTTP_200_OK)
+
+    except ObjectDoesNotExist:
+        return Response({
+            "Message": "No exercises",
+            "Code": "HTTP_200_OK",
+        }, status=status.HTTP_200_OK)
+
 
 @api_view(['GET'])
 def coach_exercises_for_trainee(request):
-    pass
+
+    check_token(request)
+
+    # Get username
+    username = get_username(request)
+
+    # Check if coach
+    if obtain_user_type(username) != "COACH":
+        return Response({
+            "Message": "User is not a coach",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    user = User.objects.get(username=username)
+    coach = Coach.objects.get(user=user)
+
+    if "trainee_username" not in request.data:
+        return Response({
+            "Message": "Missing trainee",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    trainee_username = request.data['trainee_username']
+
+    try:
+        trainee = Trainee.objects.get(user=User.objects.get(username=trainee_username))
+        exercises = AssignedExercise.objects.filter(trainee=trainee, coach=coach)
+
+        return Response({
+            "Message": "Exercises Obtained",
+            "Content": ExerciseSerializer(exercises, many=True).data,
+            "Code": "HTTP_200_OK",
+        }, status=status.HTTP_200_OK)
+
+    except ObjectDoesNotExist:
+        return Response({
+            "Message": "No exercises",
+            "Code": "HTTP_200_OK",
+        }, status=status.HTTP_200_OK)
 
 
-@api_view(['GET', 'POST'])
+@api_view(['GET', 'POST', 'DELETE'])
 def coach_exercises(request):
     check_token(request)
 
@@ -595,7 +648,7 @@ def coach_exercises(request):
 
         try:
             # Obtain exercises
-            exercises = coach.assigned_exercises
+            exercises = Exercise.objects.filter(coach=coach)
 
             return Response({
                 "Message": "Exercises Obtained",
@@ -625,16 +678,91 @@ def coach_exercises(request):
         reps = request.data['reps']
         calories = request.data['calories']
 
-        exercise = Exercise.objects.get(name=name, category=category, sub_category=sub_category,
+        exercise_category = Category.objects.create(category=category, sub_category=sub_category)
+        exercise = Exercise.objects.create(coach=coach, name=name, category=exercise_category,
                                         sets=sets, reps=reps, calories=calories)
 
-        all_exercises = coach.assigned_exercises
-        all_exercises.add(exercise)
-
-        coach.assigned_exercises = all_exercises
-        coach.save()
+        exercise.save()
 
         return Response({
             "Message": "Exercise Added Successfully",
             "Code": "HTTP_200_OK",
         }, status=status.HTTP_200_OK)
+
+    elif request.method == 'DELETE':
+
+        if "exercise_id" not in request.data:
+            return Response({
+                "Message": "Please provide the exercise",
+                "Code": "HTTP_400_BAD_REQUEST",
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        exercise_id = request.data['exercise_id']
+
+        try:
+            exercise = Exercise.objects.get(id=exercise_id)
+            exercise.delete()
+
+            return Response({
+                "Message": "Exercise Deleted Successfully",
+                "Code": "HTTP_200_OK",
+            }, status=status.HTTP_200_OK)
+
+        except ObjectDoesNotExist:
+            return Response({
+                "Message": "Exercise does not exist",
+                "Code": "HTTP_400_BAD_REQUEST",
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+def coach_assign_exercise(request, traineeId, exerciseId):
+
+    check_token(request)
+
+    # Get username
+    username = get_username(request)
+
+    # Check if coach
+    if obtain_user_type(username) != "COACH":
+        return Response({
+            "Message": "User is not a coach",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    user = User.objects.get(username=username)
+    coach = Coach.objects.get(user=user)
+
+    try:
+        trainee = Trainee.objects.get(user=User.objects.get(username=traineeId))
+
+        try:
+
+            exercise = Exercise.objects.get(id=exerciseId)
+
+            if exercise.coach != coach:
+                return Response({
+                    "Message": "Exercise does not belong to coach",
+                    "Code": "HTTP_400_BAD_REQUEST",
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            assigned_exercise = AssignedExercise(exercise_ptr=exercise)
+            assigned_exercise.trainee.add(trainee)
+            assigned_exercise.save()
+
+            return Response({
+                "Message": "Exercise Assigned Successfully",
+                "Code": "HTTP_200_OK",
+            }, status=status.HTTP_200_OK)
+
+        except ObjectDoesNotExist:
+            return Response({
+                "Message": "Exercise does not exist",
+                "Code": "HTTP_400_BAD_REQUEST",
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+    except ObjectDoesNotExist:
+        return Response({
+            "Message": "Trainee does not exist",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)

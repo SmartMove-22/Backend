@@ -31,5 +31,7 @@ urlpatterns = [
     path('trainee/exercises', views.assigned_exercises),
     path('trainee/report', views.exercises_report),
     path('coach/profile', views.coach_profile),
-    path('coach/exercises', views.coach_assigned_exercises),
+    path('coach/trainee/exercises', views.coach_assigned_exercises),
+    path('coach/trainees/<str:traineeId>/exercise/<int:exerciseId>', views.coach_assign_exercise),
+    path('coach/exercises', views.coach_exercises),
 ]
