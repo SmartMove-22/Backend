@@ -10,7 +10,7 @@ class UserSerializer(serializers.ModelSerializer):
 class ExerciseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Exercise
-        fields = ('name', 'category', 'sets','reps','calories')
+        fields = ('coach_username','name', 'category', 'sets','reps','calories')
         
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:

@@ -1,3 +1,4 @@
+from email.mime import image
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -28,44 +29,6 @@ def get_tokens_for_user(user):
     return token
 
 
-"""
-def token_is_valid(request):
-
-    if "Authorization" not in request.headers or len(request.headers["Authorization"].split()) != 2:
-        return Response({
-            "Message": "Please provide a valid token",
-            "Code": "HTTP_400_BAD_REQUEST",
-        }, status=status.HTTP_400_BAD_REQUEST)
-
-    # Get user
-    username = request.data['username']
-    user = User.objects.get(username=username)
-
-    if not user:
-        return Response({
-            "Message": "User doesn't exist",
-            "Code": "HTTP_400_BAD_REQUEST",
-        }, status=status.HTTP_400_BAD_REQUEST)
-
-    # Get provided token
-    provided_token = request.headers['Authorization'].split(' ')[1]
-
-    # Get token
-    token = get_tokens_for_user(user)
-
-    if token != provided_token:
-        return Response({
-            "Message": "Invalid token",
-            "Code": "HTTP_400_BAD_REQUEST",
-        }, status=status.HTTP_400_BAD_REQUEST)
-
-    return Response({
-        "Message": "Token is valid",
-        "Code": "HTTP_200_OK",
-    }, status=status.HTTP_200_OK)
-"""
-
-
 def token_is_valid(request):
     # Check headers
     if "Authorization" not in request.headers or len(request.headers["Authorization"].split()) != 2:
@@ -88,9 +51,17 @@ def token_is_valid(request):
     return True
 
 
+def check_token(request):
+
+    if not token_is_valid(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+
 @api_view(['POST'])
 def register(request):
-
     if "email" not in request.data or "username" not in request.data \
             or "password" not in request.data or "account_type" not in request.data:
         return Response({
@@ -155,15 +126,11 @@ def login(request):
         "Message": "User doesn't exist",
         "Code": "HTTP_400_BAD_REQUEST",
     }, status=status.HTTP_400_BAD_REQUEST)
-
-
+    
 @api_view(['POST'])
 def logout(request):
-    if not token_is_valid(request):
-        return Response({
-            "Message": "Invalid token",
-            "Code": "HTTP_400_BAD_REQUEST",
-        }, status=status.HTTP_400_BAD_REQUEST)
+
+    check_token(request)
 
     username = request.data['username']
     all_tokens[username] = None
@@ -172,110 +139,6 @@ def logout(request):
         "Message": "Logout Successful",
         "Code": "HTTP_200_OK",
     }, status=status.HTTP_200_OK)
-
-
-@api_view(['GET'])
-def profile(request):
-    if not token_is_valid(request):
-        return Response({
-            "Message": "Invalid token",
-            "Code": "HTTP_400_BAD_REQUEST",
-        }, status=status.HTTP_400_BAD_REQUEST)
-
-    # Get username
-    username = request.data['username']
-
-    user = User.objects.get(username=username)
-    if not user:
-        return Response({
-            "Message": "User doesn't exist",
-            "Code": "HTTP_400_BAD_REQUEST",
-        }, status=status.HTTP_400_BAD_REQUEST)
-
-    return Response({
-        "Message": "Profile Obtained",
-        "Content": UserSerializer(user).data,
-        "Code": "HTTP_200_OK",
-    }, status=status.HTTP_200_OK)
-
-
-@api_view(['GET'])
-def trainee_profile(request):
-    if not token_is_valid(request):
-        return Response({
-            "Message": "Invalid token",
-            "Code": "HTTP_400_BAD_REQUEST",
-        }, status=status.HTTP_400_BAD_REQUEST)
-
-    # Get username
-    username = request.data['username']
-
-    user = User.objects.get(username=username)
-    if not user:
-        return Response({
-            "Message": "User doesn't exist",
-            "Code": "HTTP_400_BAD_REQUEST",
-        }, status=status.HTTP_400_BAD_REQUEST)
-
-    try:
-        trainee = Trainee.objects.get(user=user)
-    except ObjectDoesNotExist:
-        return Response({
-            "Message": "Coach doesn't exist",
-            "Code": "HTTP_400_BAD_REQUEST",
-        }, status=status.HTTP_400_BAD_REQUEST)
-
-    if not trainee:
-        return Response({
-            "Message": "Trainee doesn't exist",
-            "Code": "HTTP_400_BAD_REQUEST",
-        }, status=status.HTTP_400_BAD_REQUEST)
-
-    return Response({
-        "Message": "Trainee Profile Obtained",
-        "Content": TraineeSerializer(trainee).data,
-        "Code": "HTTP_200_OK",
-    }, status=status.HTTP_200_OK)
-
-
-@api_view(['GET'])
-def coach_profile(request):
-    if not token_is_valid(request):
-        return Response({
-            "Message": "Invalid token",
-            "Code": "HTTP_400_BAD_REQUEST",
-        }, status=status.HTTP_400_BAD_REQUEST)
-
-    # Get username
-    username = request.data['username']
-
-    user = User.objects.get(username=username)
-    if not user:
-        return Response({
-            "Message": "User doesn't exist",
-            "Code": "HTTP_400_BAD_REQUEST",
-        }, status=status.HTTP_400_BAD_REQUEST)
-
-    try:
-        coach = Coach.objects.get(user=user)
-    except ObjectDoesNotExist:
-        return Response({
-            "Message": "Coach doesn't exist",
-            "Code": "HTTP_400_BAD_REQUEST",
-        }, status=status.HTTP_400_BAD_REQUEST)
-
-    if not coach:
-        return Response({
-            "Message": "Coach doesn't exist",
-            "Code": "HTTP_400_BAD_REQUEST",
-        }, status=status.HTTP_400_BAD_REQUEST)
-
-    return Response({
-        "Message": "Coach Profile Obtained",
-        "Content": CoachSerializer(coach).data,
-        "Code": "HTTP_200_OK",
-    }, status=status.HTTP_200_OK)
-    
     
 # Create your views here.
 
@@ -296,12 +159,9 @@ def set_category(data):
 
 @api_view(['POST', 'GET', 'DELETE'])
 def manage_exercise(request):
-    if not token_is_valid(request):
-        return Response({
-            "Message": "Invalid token",
-            "Code": "HTTP_400_BAD_REQUEST",
-        }, status=status.HTTP_400_BAD_REQUEST)
-
+    
+    check_token(request)
+    
     # Get username
     username = request.data['username']
 
@@ -331,11 +191,12 @@ def manage_exercise(request):
             name = request.data['name']
             # create a category
             category = set_category(request.data['category'])
+            # img =  request.data['img']
             sets = request.data['sets']
             reps = request.data['reps']
             calories = request.data['calories']
             # create a Exercise
-            exe = Exercise.objects.create(coach=username, name=name, category=category, sets=sets, reps=reps, calories=calories)
+            exe = Exercise.objects.create(coach_username=username, name=name, category=category, sets=sets, reps=reps, calories=calories)
             return Response({
                 "Message": "Exercise created",
                 "Content": ExerciseSerializer(exe).data,
@@ -348,7 +209,7 @@ def manage_exercise(request):
             },status=status.HTTP_400_BAD_REQUEST)      
     if request.method=='GET':
         try:
-            exer = Exercise.objects.filter(coach=username) 
+            exer = Exercise.objects.filter(coach_username=username) 
             return Response({
                 "Message": "Exercises Obtained",
                 "Content": ExerciseSerializer(exer, many=True).data,
@@ -363,7 +224,7 @@ def manage_exercise(request):
         try:
             id_exer = request.data['id']
             # create a Exercise
-            exe = Exercise.objects.get(id=id_exer, coach=username)
+            exe = Exercise.objects.get(id=id_exer, coach_username=username)
             exe.delete()
             return Response({
                 "Message": "Exercise Deleted",
@@ -376,19 +237,6 @@ def manage_exercise(request):
             }, status=status.HTTP_400_BAD_REQUEST)
             
             
-# def auth_user(request):
-#     if not token_is_valid(request):
-#         return []
-
-#     # Get username
-#     username = request.data['username']
-
-#     user = User.objects.get(username=username)
-#     if not user:
-#         return []
-
-#     return user
-
 @api_view(['GET'])
 def get_categories(request):
    
