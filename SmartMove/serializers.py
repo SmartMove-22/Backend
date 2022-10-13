@@ -25,16 +25,24 @@ class TraineeSerializer(serializers.ModelSerializer):
 class CoachSerializer(serializers.ModelSerializer):
     class Meta:
         model = Coach
-        fields = ('user', 'coach_exercises')
+        fields = 'user'
 
 
 class ExerciseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Exercise
-        fields = ('name', 'category', 'sets', 'reps', 'calories')
+        fields = ('id', 'coach', 'name', 'category', 'sets', 'reps', 'calories')
+
+
+class AssignedExerciseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Exercise
+        fields = ('id', 'coach', 'name', 'category', 'sets', 'reps', 'calories', 'completed', 'correctness', 'performance',
+                  'improvement', 'calories_burned', 'grade')
 
 
 class ReportSerializer(serializers.ModelSerializer):
     class Meta:
         model = Report
-        fields = ('trainee', 'exercises', 'date', 'completed', 'correctness', 'performance', 'improvement', 'calories_burned')
+        fields = ('id', 'trainee', 'exercises', 'date', 'completed', 'correctness', 'performance', 'improvement',
+                  'calories_burned')
