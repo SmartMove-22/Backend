@@ -35,7 +35,7 @@ class Exercise(models.Model):
     calories = models.IntegerField()
 
     def __str__(self):
-        return self.name
+        return str(self.id) + " - " + self.name
 
 
 class Trainee(models.Model):
@@ -54,15 +54,19 @@ class Trainee(models.Model):
 
 
 # Extends Exercise
-class AssignedExercise(Exercise):
+class AssignedExercise(models.Model):
 
-    trainee = models.ManyToManyField(Trainee)
-    # Many-to-many relationship with Trainee
+    exercise = models.ForeignKey(Exercise, on_delete=models.CASCADE)
+    assigned_id = models.AutoField(primary_key=True)
+    trainee = models.ForeignKey(Trainee, on_delete=models.CASCADE)
+
     completed = models.BooleanField(default=False)
     correctness = models.FloatField(default=0)
     performance = models.FloatField(default=0)
     improvement = models.FloatField(default=0)
     calories_burned = models.IntegerField(default=0)
+    pacing = models.FloatField(default=0)
+    bpms = models.IntegerField(default=0)
     grade = models.IntegerField(default=0)
 
 

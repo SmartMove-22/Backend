@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
 
-from SmartMove.models import Trainee, Coach, Exercise, Report, RealTimeReport
+from SmartMove.models import Trainee, Coach, AssignedExercise, Exercise, Report, Category, RealTimeReport
 
 
 class RealTimeReportSerializer(serializers.ModelSerializer):
@@ -15,32 +15,40 @@ class RealTimeReportSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('username', 'email', 'password')
+        fields = ('username', 'email')
 
 
 class TraineeSerializer(serializers.ModelSerializer):
+    user = UserSerializer(many=False, read_only=True)
+
     class Meta:
         model = Trainee
-        fields = ('user', 'trainee_coach', 'assigned_exercises', 'weight', 'height')
+        fields = ('user', 'trainee_coach', 'weight', 'height')
 
 
 class CoachSerializer(serializers.ModelSerializer):
+    user = UserSerializer(many=False, read_only=True)
+
     class Meta:
         model = Coach
-        fields = 'user'
+        fields = ['user']
 
 
 class ExerciseSerializer(serializers.ModelSerializer):
+    coach = CoachSerializer(many=False, read_only=True)
+
     class Meta:
         model = Exercise
         fields = ('id', 'coach', 'name', 'category', 'sets', 'reps', 'calories')
 
 
 class AssignedExerciseSerializer(serializers.ModelSerializer):
+    trainee = TraineeSerializer(many=False, read_only=True)
+    exercise = ExerciseSerializer(many=False, read_only=True)
+
     class Meta:
-        model = Exercise
-        fields = ('id', 'coach', 'name', 'category', 'sets', 'reps', 'calories', 'completed', 'correctness', 'performance',
-                  'improvement', 'calories_burned', 'grade')
+        model = AssignedExercise
+        fields = ('exercise', 'assigned_id', 'trainee', 'completed', 'correctness', 'performance', 'improvement', 'calories_burned', 'pacing', 'bpms', 'grade')
 
 
 class ReportSerializer(serializers.ModelSerializer):
@@ -48,3 +56,9 @@ class ReportSerializer(serializers.ModelSerializer):
         model = Report
         fields = ('id', 'trainee', 'exercises', 'date', 'completed', 'correctness', 'performance', 'improvement',
                   'calories_burned')
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ('category', 'sub_category')
