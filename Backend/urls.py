@@ -25,6 +25,7 @@ urlpatterns = [
     path('auth/register', views.register),
     path('auth/login', views.login),
     path('user/logout', views.logout),
+    path('coach/trainees/', views.evaluate)
    # path('user/profile', views.profile),
   #  path('trainee/profile', views.trainee_profile),
   #  path('coach/profile', views.coach_profile),

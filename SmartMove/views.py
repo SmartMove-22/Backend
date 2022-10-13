@@ -1,8 +1,9 @@
+from ast import Assign
 from email.mime import image
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from SmartMove.models import Category, Exercise, Trainee, Coach
+from SmartMove.models import AssignedExercise, Category, Exercise, Trainee, Coach
 from SmartMove.serializers import ExerciseSerializer, CategorySerializer, UserSerializer, TraineeSerializer, CoachSerializer
 from django.core.exceptions import ObjectDoesNotExist
     
@@ -14,6 +15,16 @@ from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
 
 all_tokens = {}
+
+
+def get_username(request):
+
+    token = request.headers['Authorization'].split(' ')[1]
+    username = [key for key, value in all_tokens.items() if value == token]
+    if len(username) == 0:
+        return None
+
+    return username[0]
 
 
 def get_tokens_for_user(user):
@@ -35,24 +46,18 @@ def token_is_valid(request):
         return False
 
     # Get user
-    username = request.data['username']
-    user = User.objects.get(username=username)
-    if not user:
+    username = get_username(request)
+    if not username:
         return False
 
-    # Get provided token
-    provided_token = request.headers['Authorization'].split(' ')[1]
-
-    # Get token
-    token = get_tokens_for_user(user)
-    if token != provided_token:
+    user = User.objects.get(username=username)
+    if not user:
         return False
 
     return True
 
 
 def check_token(request):
-
     if not token_is_valid(request):
         return Response({
             "Message": "Invalid token",
@@ -126,13 +131,13 @@ def login(request):
         "Message": "User doesn't exist",
         "Code": "HTTP_400_BAD_REQUEST",
     }, status=status.HTTP_400_BAD_REQUEST)
-    
+
+
 @api_view(['POST'])
 def logout(request):
-
     check_token(request)
 
-    username = request.data['username']
+    username = get_username(request)
     all_tokens[username] = None
 
     return Response({
@@ -140,6 +145,15 @@ def logout(request):
         "Code": "HTTP_200_OK",
     }, status=status.HTTP_200_OK)
     
+def is_coach(user):
+    try:
+        # Check if coach
+        Coach.objects.get(user=user)
+        return True
+
+    except ObjectDoesNotExist:
+        return False
+
 # Create your views here.
 
 def set_category(data):
@@ -161,9 +175,9 @@ def set_category(data):
 def manage_exercise(request):
     
     check_token(request)
-    
+
     # Get username
-    username = request.data['username']
+    username = get_username(request)
 
     user = User.objects.get(username=username)
     if not user:
@@ -227,7 +241,7 @@ def manage_exercise(request):
     if request.method=='DELETE':
         try:
             id_exer = request.data['id']
-            # create a Exercise
+            # get a Exercise
             exe = Exercise.objects.get(id=id_exer, coach=coach)
             exe.delete()
             return Response({
@@ -287,6 +301,55 @@ def exercises(request):
             "Code": "HTTP_400_BAD_REQUEST",
         }, status=status.HTTP_400_BAD_REQUEST) 
              
+@api_view(['PATCH'])
+def evaluate(request):
+    check_token(request)
+    
+    username = get_username(request)
+
+    # Get username
+    user = User.objects.get(username=username)
+    if not user:
+        return Response({
+            "Message": "User doesn't exist",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        coach = Coach.objects.get(user=user)
+    except ObjectDoesNotExist:
+        return Response({
+            "Message": "Coach doesn't exist",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    if not coach:
+        return Response({
+            "Message": "Coach doesn't exist",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        assigned_id = request.data['assigned_id']
+        exe = AssignedExercise.objects.get(assigned_id=assigned_id, coach=coach)
+        if not exe or 'grade' not in request.data:
+            return Response({
+                "Message": "Assigned Exercise Not Found",
+                "Code": "HTTP_400_BAD_REQUEST",
+            }, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            exe.grade = request.data['grade']
+            exe.save()
+            return Response({
+                "Message": "Grade Saved",
+                "Code": "HTTP_200_OK",
+            }, status=status.HTTP_200_OK)
+    except ObjectDoesNotExist:
+        return Response({
+            "Message": "Assigned Exercise Not Found",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
 
 #def search_exercise(request):
 

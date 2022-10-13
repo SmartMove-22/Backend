@@ -39,16 +39,7 @@ class Exercise(models.Model):
         return self.name
 
 
-# Extends Exercise
-class AssignedExercise(Exercise):
 
-    # Many-to-many relationship with Trainee
-    completed = models.BooleanField(default=False)
-    correctness = models.FloatField(default=0)
-    performance = models.FloatField(default=0)
-    improvement = models.FloatField(default=0)
-    calories_burned = models.IntegerField(default=0)
-    grade = models.IntegerField(default=0)
 
 
 # class AppUser(models.Model):
@@ -98,3 +89,16 @@ class Report(models.Model):
 
     def __str__(self):
         return self.trainee.username + " - " + str(self.date)
+
+# Extends Exercise
+class AssignedExercise(Exercise):
+
+    assigned_id = models.AutoField(primary_key=True)
+    coach = models.ForeignKey(Coach, on_delete=models.CASCADE, null=True)
+    trainee = models.ForeignKey(Trainee, on_delete=models.CASCADE)
+    completed = models.BooleanField(default=False)
+    correctness = models.FloatField(default=0)
+    performance = models.FloatField(default=0)
+    improvement = models.FloatField(default=0)
+    calories_burned = models.IntegerField(default=0)
+    grade = models.IntegerField(default=0)
