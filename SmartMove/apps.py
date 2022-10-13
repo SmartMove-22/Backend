@@ -8,7 +8,6 @@ class SmartmoveConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'SmartMove'
     
-    # TODO: hardcoded
     mongodb_connection_string = 'mongodb://mongo:mongo@mongodb'
     reference_store = None
     knn_models = None

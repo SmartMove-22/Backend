@@ -289,17 +289,16 @@ def coach_profile(request):
 def exercise_analysis(request, exerciseId):
 
     time = int(request.data['time'])
-    repetition_half = int(request.data['repetition_half'])
+    first_half = bool(request.data['first_half'])
     exercise_category = request.data['exercise_category']
     landmarks_coordinates = [request.data[str(i)] for i in range(33)]
 
     smartmoveConfig = apps.get_app_config('SmartMove')
 
-    if (exercise_category, repetition_half) not in smartmoveConfig.knn_models:
-        # TODO: error response (exercise not present)
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+    if (exercise_category, first_half) not in smartmoveConfig.knn_models:
+        return Response(data={"error_msg": f"The specified exercise {exercise_category} is not supported."}, status=status.HTTP_400_BAD_REQUEST)
     
-    knn_model = smartmoveConfig.knn_models[(exercise_category, repetition_half == 1)]
+    knn_model = smartmoveConfig.knn_models[(exercise_category, first_half == 1)]
 
     if knn_model:
         landmark_angles = landmark_list_angles([
@@ -309,17 +308,16 @@ def exercise_analysis(request, exerciseId):
         progress = knn_model.progress(landmark_angles)
     else:
         # TODO: error response
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+        return Response(data={"error_msg": f"The system is not trained for exercise {exercise_category}."}, status=status.HTTP_400_BAD_REQUEST)
 
-    # TODO: repetitions aren't tracked yet (the value of 'repetition')
-    repetition = 0
+    finished_repetition = False
     if progress > 0.95:
-        repetition_half = 1 if repetition_half == 2 else 2
-        if repetition_half == 1:
-            repetition = 1
+        first_half = not first_half
+        if first_half:
+            finished_repetition = True
 
     # Convert to Python data types that can then be easily rendered into JSON (Example)
-    report = RealTimeReport.objects.create(correctness=correctness, progress=progress, repetition=repetition, repetition_half=repetition_half)
+    report = RealTimeReport.objects.create(correctness=correctness, progress=progress, finished_repetition=finished_repetition, first_half=first_half)
     response = RealTimeReportSerializer(report)
 
     return Response(response.data, status=status.HTTP_200_OK)

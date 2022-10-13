@@ -101,5 +101,5 @@ class RealTimeReport(models.Model):
     id = models.AutoField(primary_key=True)
     correctness = models.FloatField()
     progress = models.FloatField()
-    repetition = models.IntegerField()
-    repetition_half = models.IntegerField()
+    finished_repetition = models.BooleanField()
+    first_half = models.BooleanField()
