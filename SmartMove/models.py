@@ -20,6 +20,7 @@ class Coach(models.Model):
 
     # One-to-many relationship with Exercise
 
+
 class Exercise(models.Model):
 
     id = models.AutoField(primary_key=True)
@@ -77,14 +78,14 @@ class Report(models.Model):
     # Many-to-one relationship with Trainee
     trainee = models.ForeignKey(Trainee, on_delete=models.CASCADE)
     # Many-to-many relationship with Exercise
-    exercises = models.ManyToManyField(Exercise)
+    exercises = models.ManyToManyField(AssignedExercise)
 
     date = models.DateField()
 
-    correctness = models.FloatField()
-    performance = models.FloatField()
-    improvement = models.FloatField()
-    calories_burned = models.IntegerField()
+    correctness = models.FloatField(default=0)
+    performance = models.FloatField(default=0)
+    improvement = models.FloatField(default=0)
+    calories_burned = models.IntegerField(default=0)
 
     def __str__(self):
         return self.trainee.username + " - " + str(self.date)

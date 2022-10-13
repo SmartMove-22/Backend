@@ -20,6 +20,7 @@ from SmartMove.serializers import RealTimeReportSerializer, UserSerializer, Trai
 from django.core.exceptions import ObjectDoesNotExist
 
 import datetime
+from datetime import datetime
 
 all_tokens = {}
 
@@ -546,21 +547,40 @@ def exercises_report(request):
         user = User.objects.get(username=username)
         trainee = Trainee.objects.get(user=user)
 
-        date = datetime.datetime.now()
-        if "date" in request.data:
-            date = request.data['date']
+        date = datetime.now()
+        if "timestamp" in request.data:
+            date = date.fromtimestamp(request.data['timestamp'])
 
-        reports = Report.objects.get(trainee=trainee, date=date)
+        report = Report.objects.get(trainee=trainee, date=date)
+
+        # Update correctness, performance, improvement and calories_burned
+        correctness = performance = improvement = calories_burned = 0
+        for exercise in report.exercises.all():
+            correctness += exercise.correctness
+            performance += exercise.performance
+            improvement += exercise.improvement
+            calories_burned += exercise.calories_burned
+
+        correctness /= len(report.exercises.all())
+        performance /= len(report.exercises.all())
+        improvement /= len(report.exercises.all())
+
+        report.correctness = correctness
+        report.performance = performance
+        report.improvement = improvement
+        report.calories_burned = calories_burned
+
+        report.save()
 
         return Response({
-            "Message": "Report Obtained for " + date,
-            "Content": ReportSerializer(reports, many=True).data,
+            "Message": "Report Obtained for " + str(date),
+            "Content": ReportSerializer(report).data,
             "Code": "HTTP_200_OK",
         }, status=status.HTTP_200_OK)
 
     except ObjectDoesNotExist:
         return Response({
-            "Message": "No reports",
+            "Message": "No reports for " + str(date),
             "Code": "HTTP_200_OK",
         }, status=status.HTTP_200_OK)
 
@@ -671,12 +691,6 @@ def coach_assigned_exercises(request):
 
     try:
         exercises = Exercise.objects.filter(coach=coach)
-        """
-        all_assigned_exercises = []
-        for exercise in exercises:
-            all_assigned_exercises.append(
-                AssignedExerciseSerializer(AssignedExercise.objects.filter(exercise=exercise), many=True).data)
-        """
         all_assigned_exercises = AssignedExercise.objects.filter(exercise__in=exercises)
 
         return Response({
@@ -845,7 +859,7 @@ def coach_manage_exercise(request, traineeId, exerciseId):
 
     try:
         trainee = Trainee.objects.get(user=User.objects.get(username=traineeId))
-        if trainee.coach != coach:
+        if trainee.trainee_coach != coach:
             return Response({
                 "Message": "Trainee is not assigned to you",
                 "Code": "HTTP_400_BAD_REQUEST",
@@ -864,6 +878,10 @@ def coach_manage_exercise(request, traineeId, exerciseId):
 
                 assigned_exercise = AssignedExercise.objects.get_or_create(exercise=exercise, trainee=trainee)[0]
                 assigned_exercise.save()
+
+                report = Report.objects.get_or_create(trainee=trainee, date=datetime.datetime.now())[0]
+                report.exercises.add(assigned_exercise)
+                report.save()
 
                 return Response({
                     "Message": "Exercise Assigned Successfully",
@@ -891,7 +909,6 @@ def coach_manage_exercise(request, traineeId, exerciseId):
             "Message": "Trainee does not exist",
             "Code": "HTTP_400_BAD_REQUEST",
         }, status=status.HTTP_400_BAD_REQUEST)
-
 
 
 @api_view(['PATCH'])
