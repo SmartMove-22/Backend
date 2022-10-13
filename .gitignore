@@ -130,3 +130,5 @@ dmypy.json
 
 .idea
 data
+SmartMove/migrations/*
+!SmartMove/migrations/__init__.py
