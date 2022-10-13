@@ -8,7 +8,7 @@ from django.contrib.auth import authenticate
 
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
-from SmartMove.models import Trainee, Coach, Report
+from SmartMove.models import Trainee, Coach, Report, Exercise
 from SmartMove.serializers import UserSerializer, TraineeSerializer, CoachSerializer, ExerciseSerializer, \
     ReportSerializer
 
@@ -17,6 +17,15 @@ from django.core.exceptions import ObjectDoesNotExist
 import datetime
 
 all_tokens = {}
+
+
+def get_username(request):
+    token = request.headers['Authorization'].split(' ')[1]
+    username = [key for key, value in all_tokens.items() if value == token]
+    if len(username) == 0:
+        return None
+
+    return username[0]
 
 
 def get_tokens_for_user(user):
@@ -37,25 +46,22 @@ def token_is_valid(request):
     if "Authorization" not in request.headers or len(request.headers["Authorization"].split()) != 2:
         return False
 
+    # Get provided token
+    token = request.headers['Authorization'].split(' ')[1]
+
     # Get user
-    username = request.data['username']
-    user = User.objects.get(username=username)
-    if not user:
+    username = get_username(token)
+    if not username:
         return False
 
-    # Get provided token
-    provided_token = request.headers['Authorization'].split(' ')[1]
-
-    # Get token
-    token = get_tokens_for_user(user)
-    if token != provided_token:
+    user = User.objects.get(username=username)
+    if not user:
         return False
 
     return True
 
 
 def check_token(request):
-
     if not token_is_valid(request):
         return Response({
             "Message": "Invalid token",
@@ -133,10 +139,9 @@ def login(request):
 
 @api_view(['POST'])
 def logout(request):
-
     check_token(request)
 
-    username = request.data['username']
+    username = get_username(request)
     all_tokens[username] = None
 
     return Response({
@@ -147,11 +152,10 @@ def logout(request):
 
 @api_view(['GET'])
 def profile(request):
-
     check_token(request)
 
     # Get username
-    username = request.data['username']
+    username = get_username(request)
 
     user = User.objects.get(username=username)
     if not user:
@@ -169,11 +173,10 @@ def profile(request):
 
 @api_view(['GET'])
 def trainee_profile(request):
-
     check_token(request)
 
     # Get username
-    username = request.data['username']
+    username = get_username(request)
 
     user = User.objects.get(username=username)
     if not user:
@@ -205,11 +208,10 @@ def trainee_profile(request):
 
 @api_view(['GET'])
 def coach_profile(request):
-
     check_token(request)
 
     # Get username
-    username = request.data['username']
+    username = get_username(request)
 
     user = User.objects.get(username=username)
     if not user:
@@ -240,7 +242,6 @@ def coach_profile(request):
 
 
 def is_trainee(user):
-
     try:
         # Check if trainee
         Trainee.objects.get(user=user)
@@ -251,18 +252,16 @@ def is_trainee(user):
 
 
 def is_coach(user):
+    try:
+        # Check if coach
+        Coach.objects.get(user=user)
+        return True
 
-        try:
-            # Check if coach
-            Coach.objects.get(user=user)
-            return True
-
-        except ObjectDoesNotExist:
-            return False
+    except ObjectDoesNotExist:
+        return False
 
 
 def obtain_user_type(username):
-
     try:
         user = User.objects.get(username=username)
 
@@ -279,11 +278,10 @@ def obtain_user_type(username):
 
 @api_view(['GET'])
 def user_type(request):
-
     check_token(request)
 
     # Get username
-    username = request.data['username']
+    username = get_username(request)
     account_type = obtain_user_type(username)
 
     if account_type:
@@ -303,16 +301,10 @@ def user_type(request):
 
 @api_view(['GET'])
 def trainee_coaches(request):
-
     check_token(request)
 
-    if "username" not in request.data:
-        return Response({
-            "Message": "Missing username",
-            "Code": "HTTP_400_BAD_REQUEST",
-        }, status=status.HTTP_400_BAD_REQUEST)
-
-    username = request.data['username']
+    # Get username
+    username = get_username(request)
 
     # Check if trainee
     if obtain_user_type(username) != "TRAINEE":
@@ -340,16 +332,10 @@ def trainee_coaches(request):
 
 @api_view(['GET', 'PUT', 'DELETE'])
 def trainee_coach(request):
-
     check_token(request)
 
-    if "username" not in request.data:
-        return Response({
-            "Message": "Missing username",
-            "Code": "HTTP_400_BAD_REQUEST",
-        }, status=status.HTTP_400_BAD_REQUEST)
-
-    username = request.data['username']
+    # Get username
+    username = get_username(request)
 
     # Check if trainee
     if obtain_user_type(username) != "TRAINEE":
@@ -433,16 +419,9 @@ def trainee_coach(request):
 
 @api_view(['GET'])
 def assigned_exercises(request):
-
     check_token(request)
 
-    if "username" not in request.data:
-        return Response({
-            "Message": "Missing username (trainee or coach)",
-            "Code": "HTTP_400_BAD_REQUEST",
-        }, status=status.HTTP_400_BAD_REQUEST)
-
-    username = request.data['username']
+    username = get_username(request)
 
     # Check if trainee
     if obtain_user_type(username) != "TRAINEE":
@@ -471,16 +450,10 @@ def assigned_exercises(request):
 
 @api_view(['GET'])
 def exercises_report(request):
-
     check_token(request)
 
-    if "username" not in request.data:
-        return Response({
-            "Message": "Missing username (trainee or coach)",
-            "Code": "HTTP_400_BAD_REQUEST",
-        }, status=status.HTTP_400_BAD_REQUEST)
-
-    username = request.data['username']
+    # Get username
+    username = get_username(request)
 
     # Check if trainee
     if obtain_user_type(username) != "TRAINEE":
@@ -515,16 +488,10 @@ def exercises_report(request):
 
 @api_view(['PATCH'])
 def trainee_weight(request):
-
     check_token(request)
 
-    if "username" not in request.data:
-        return Response({
-            "Message": "Missing username (trainee or coach)",
-            "Code": "HTTP_400_BAD_REQUEST",
-        }, status=status.HTTP_400_BAD_REQUEST)
-
-    username = request.data['username']
+    # Get username
+    username = get_username(request)
 
     # Check if trainee
     if obtain_user_type(username) != "TRAINEE":
@@ -554,16 +521,10 @@ def trainee_weight(request):
 
 @api_view(['PATCH'])
 def trainee_height(request):
-
     check_token(request)
 
-    if "username" not in request.data:
-        return Response({
-            "Message": "Missing username (trainee or coach)",
-            "Code": "HTTP_400_BAD_REQUEST",
-        }, status=status.HTTP_400_BAD_REQUEST)
-
-    username = request.data['username']
+    # Get username
+    username = get_username(request)
 
     # Check if trainee
     if obtain_user_type(username) != "TRAINEE":
@@ -595,8 +556,85 @@ def trainee_height(request):
 
 @api_view(['GET'])
 def coach_assigned_exercises(request):
+    check_token(request)
 
-    return Response({
-        "Message": request.data,
-        "Code": "HTTP_200_OK",
-    }, status=status.HTTP_200_OK)
+    # Get username
+    username = get_username(request)
+
+    # Check if coach
+    if obtain_user_type(username) != "COACH":
+        return Response({
+            "Message": "User is not a coach",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+def coach_exercises_for_trainee(request):
+    pass
+
+
+@api_view(['GET', 'POST'])
+def coach_exercises(request):
+    check_token(request)
+
+    # Get username
+    username = get_username(request)
+
+    # Check if coach
+    if obtain_user_type(username) != "COACH":
+        return Response({
+            "Message": "User is not a coach",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    user = User.objects.get(username=username)
+    coach = Coach.objects.get(user=user)
+
+    if request.method == 'GET':
+
+        try:
+            # Obtain exercises
+            exercises = coach.assigned_exercises
+
+            return Response({
+                "Message": "Exercises Obtained",
+                "Content": ExerciseSerializer(exercises, many=True).data,
+                "Code": "HTTP_200_OK",
+            }, status=status.HTTP_200_OK)
+
+        except ObjectDoesNotExist:
+            return Response({
+                "Message": "No exercises",
+                "Code": "HTTP_200_OK",
+            }, status=status.HTTP_200_OK)
+
+    elif request.method == 'POST':
+
+        if "name" not in request.data or "category" not in request.data or "sub_category" not in request.data \
+                or "sets" not in request.data or "reps" not in request.data or "calories" not in request.data:
+            return Response({
+                "Message": "Please provide missing fields",
+                "Code": "HTTP_400_BAD_REQUEST",
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        name = request.data['name']
+        category = request.data['category']
+        sub_category = request.data['sub_category']
+        sets = request.data['sets']
+        reps = request.data['reps']
+        calories = request.data['calories']
+
+        exercise = Exercise.objects.get(name=name, category=category, sub_category=sub_category,
+                                        sets=sets, reps=reps, calories=calories)
+
+        all_exercises = coach.assigned_exercises
+        all_exercises.add(exercise)
+
+        coach.assigned_exercises = all_exercises
+        coach.save()
+
+        return Response({
+            "Message": "Exercise Added Successfully",
+            "Code": "HTTP_200_OK",
+        }, status=status.HTTP_200_OK)
