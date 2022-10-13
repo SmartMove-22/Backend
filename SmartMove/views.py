@@ -296,12 +296,37 @@ def set_category(data):
 
 @api_view(['POST', 'GET', 'DELETE'])
 def manage_exercise(request):
+    if not token_is_valid(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    # Get username
+    username = request.data['username']
+
+    user = User.objects.get(username=username)
+    if not user:
+        return Response({
+            "Message": "User doesn't exist",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        coach = Coach.objects.get(user=user)
+    except ObjectDoesNotExist:
+        return Response({
+            "Message": "Coach doesn't exist",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    if not coach:
+        return Response({
+            "Message": "Coach doesn't exist",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
     
-   # user = auth_user(request)
-    
-   # if user != []:
     if request.method=='POST':
-        print('HERE')
         try: 
             name = request.data['name']
             # create a category
@@ -310,7 +335,7 @@ def manage_exercise(request):
             reps = request.data['reps']
             calories = request.data['calories']
             # create a Exercise
-            exe = Exercise.objects.create(name=name, category=category, sets=sets, reps=reps, calories=calories)
+            exe = Exercise.objects.create(coach=username, name=name, category=category, sets=sets, reps=reps, calories=calories)
             return Response({
                 "Message": "Exercise created",
                 "Content": ExerciseSerializer(exe).data,
@@ -323,7 +348,7 @@ def manage_exercise(request):
             },status=status.HTTP_400_BAD_REQUEST)      
     if request.method=='GET':
         try:
-            exer = Exercise.objects.all() 
+            exer = Exercise.objects.filter(coach=username) 
             return Response({
                 "Message": "Exercises Obtained",
                 "Content": ExerciseSerializer(exer, many=True).data,
@@ -338,7 +363,7 @@ def manage_exercise(request):
         try:
             id_exer = request.data['id']
             # create a Exercise
-            exe = Exercise.objects.get(id=id_exer)
+            exe = Exercise.objects.get(id=id_exer, coach=username)
             exe.delete()
             return Response({
                 "Message": "Exercise Deleted",
