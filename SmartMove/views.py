@@ -1,25 +1,16 @@
-import re
-from unicodedata import category
-from django.shortcuts import render
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from SmartMove.models import Category, Exercise
-from SmartMove.serializers import ExerciseSerializer, CategorySerializer
+from SmartMove.models import Category, Exercise, Trainee, Coach
+from SmartMove.serializers import ExerciseSerializer, CategorySerializer, UserSerializer, TraineeSerializer, CoachSerializer
 from django.core.exceptions import ObjectDoesNotExist
     
 from django.contrib.auth.models import User
 
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
 from django.contrib.auth import authenticate
 
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
-from SmartMove.models import Trainee, Coach
-from SmartMove.serializers import UserSerializer, TraineeSerializer, CoachSerializer
-
-from django.core.exceptions import ObjectDoesNotExist
 
 all_tokens = {}
 
@@ -288,7 +279,7 @@ def coach_profile(request):
     
 # Create your views here.
 
-def create_category(data):
+def set_category(data):
     
     try:    
         cat = Category.objects.get(category=data['category'], sub_category=data['sub_category'] )
@@ -305,21 +296,21 @@ def create_category(data):
 
 @api_view(['POST', 'GET', 'DELETE'])
 def manage_exercise(request):
-   
+    
+   # user = auth_user(request)
+    
+   # if user != []:
     if request.method=='POST':
+        print('HERE')
         try: 
             name = request.data['name']
-
             # create a category
-            category = create_category(request.data['category'])
-            
+            category = set_category(request.data['category'])
             sets = request.data['sets']
             reps = request.data['reps']
             calories = request.data['calories']
-
             # create a Exercise
             exe = Exercise.objects.create(name=name, category=category, sets=sets, reps=reps, calories=calories)
-
             return Response({
                 "Message": "Exercise created",
                 "Content": ExerciseSerializer(exe).data,
@@ -330,7 +321,6 @@ def manage_exercise(request):
                 "Message": "Error creating Exercise",
                 "Code": "HTTP_400_BAD_REQUEST",
             },status=status.HTTP_400_BAD_REQUEST)      
-             
     if request.method=='GET':
         try:
             exer = Exercise.objects.all() 
@@ -344,15 +334,12 @@ def manage_exercise(request):
                 "Message": "Exercise Table is Empty",
                 "Code": "HTTP_400_BAD_REQUEST",
             }, status=status.HTTP_400_BAD_REQUEST)
-    
     if request.method=='DELETE':
         try:
             id_exer = request.data['id']
-
             # create a Exercise
             exe = Exercise.objects.get(id=id_exer)
             exe.delete()
-            
             return Response({
                 "Message": "Exercise Deleted",
                 "Code": "HTTP_200_OK",
@@ -362,43 +349,59 @@ def manage_exercise(request):
                 "Message": "Exercise Not Found",
                 "Code": "HTTP_400_BAD_REQUEST",
             }, status=status.HTTP_400_BAD_REQUEST)
+            
+            
+# def auth_user(request):
+#     if not token_is_valid(request):
+#         return []
 
+#     # Get username
+#     username = request.data['username']
 
+#     user = User.objects.get(username=username)
+#     if not user:
+#         return []
+
+#     return user
 
 @api_view(['GET'])
-def get_categories():
+def get_categories(request):
    
     try:
-        cat = Category.objects.all() 
+        if "category" in request.data:
+            cat = Category.objects.filter(category=request.data['category'])
+        else:
+            cat = Category.objects.all()  
         return Response({
-            "Message": "Exercises Obtained",
-            "Content": ExerciseSerializer(cat, many=True).data,
-            "Code": "HTTP_200_OK",
-        }, status=status.HTTP_200_OK)
+                "Message": "Categories Obtained",
+                "Content": CategorySerializer(cat, many=True).data,
+                "Code": "HTTP_200_OK",
+            }, status=status.HTTP_200_OK)
+          
     except ObjectDoesNotExist:
         return Response({
-            "Message": "Exercise Table is Empty",
+            "Message": "Category table Empty",
             "Code": "HTTP_400_BAD_REQUEST",
         }, status=status.HTTP_400_BAD_REQUEST) 
              
    
 @api_view(['GET'])
 def exercises(request):
-   
-    name = request.data['name']
-
-    # create a category
-    category = request.data['category']['category']   
-    sub_category = request.data['category']['sub_category']
-    sets = request.data['sets']
-    reps = request.data['reps']
-    calories = request.data['calories']
     
+    #name = request.data['name']    
+    #sets = request.data['sets']
+    #reps = request.data['reps']
+    #calories = request.data['calories']
+  
     try:
-        cat = Category.objects.all() 
+        if "category" in request.data:
+            category = set_category(request.data['category'])
+            exer = Exercise.objects.filter(category=category)
+        else:
+            exer = Exercise.objects.all()
         return Response({
             "Message": "Exercises Obtained",
-            "Content": ExerciseSerializer(cat, many=True).data,
+            "Content": ExerciseSerializer(exer, many=True).data,
             "Code": "HTTP_200_OK",
         }, status=status.HTTP_200_OK)
     except ObjectDoesNotExist:
@@ -408,7 +411,7 @@ def exercises(request):
         }, status=status.HTTP_400_BAD_REQUEST) 
              
 
-# def search_exercise(request):
+#def search_exercise(request):
 
 #     name = request.data['name']
     

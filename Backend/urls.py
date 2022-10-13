@@ -20,5 +20,12 @@ from SmartMove import views
 urlpatterns = [
     #    path('admin/', admin.site.urls),
     path('coach/exercises', views.manage_exercise),
-    path('exercises/categories', views.exercises),
+    path('exercises/categories', views.get_categories),
+    path('exercises', views.exercises),
+    path('auth/register', views.register),
+    path('auth/login', views.login),
+    path('user/logout', views.logout),
+    path('user/profile', views.profile),
+    path('trainee/profile', views.trainee_profile),
+    path('coach/profile', views.coach_profile),
 ]
