@@ -12,7 +12,16 @@ class Category(models.Model):
         return self.category + " - " + self.sub_category
 
 
-class Exercise(models.Model):
+class Coach(models.Model):
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+
+    # One-to-many relationship with Trainee
+
+    # One-to-many relationship with Exercise
+    
+    
+ class Exercise(models.Model):
 
     id = models.AutoField(primary_key=True)
     
@@ -40,15 +49,6 @@ class AssignedExercise(Exercise):
     improvement = models.FloatField(default=0)
     calories_burned = models.IntegerField(default=0)
     grade = models.IntegerField(default=0)
-
-
-class Coach(models.Model):
-
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-
-    # One-to-many relationship with Trainee
-
-    # One-to-many relationship with Exercise
 
 
 class Trainee(models.Model):
