@@ -7,3 +7,4 @@ mediapipe==0.8.11
 numpy==1.23.3
 scikit-learn==1.1.2
 psycopg2>
+

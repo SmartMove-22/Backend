@@ -26,11 +26,19 @@ services:
       - POSTGRES_PASSWORD=postgres
   api:
     build: .
-    command: sh -c "python manage.py makemigrations && python manage.py migrate && python manage.py runserver 0.0.0.0:80"
+    command: >
+        sh -c "export MONGO_USER=$$(cat /run/secrets/mongo_user)
+        && export MONGO_PASS=$$(cat /run/secrets/mongo_pass)
+        && python manage.py makemigrations
+        && python manage.py migrate
+        && python manage.py runserver 0.0.0.0:80"
     volumes:
       - .:/code
     ports:
       - "80:80"
+    secrets:
+     - mongo_user
+     - mongo_pass
     environment:
       - POSTGRES_NAME=postgres
       - POSTGRES_USER=postgres
