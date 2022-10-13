@@ -1,4 +1,8 @@
 from django.shortcuts import render
+from django.apps import apps
+from rest_framework import status
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth.models import User
 
@@ -8,8 +12,11 @@ from django.contrib.auth import authenticate
 
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
-from SmartMove.models import Trainee, Coach, Report, Exercise, Category, AssignedExercise
-from SmartMove.serializers import UserSerializer, TraineeSerializer, CoachSerializer, ExerciseSerializer, \
+from .smart_move_analysis.reference_store import LandmarkData
+from .smart_move_analysis.utils import landmark_list_angles
+
+from SmartMove.models import RealTimeReport, Trainee, Coach, Report, Exercise, Category, AssignedExercise
+from SmartMove.serializers import RealTimeReportSerializer, UserSerializer, TraineeSerializer, CoachSerializer, ExerciseSerializer, \
     ReportSerializer, AssignedExerciseSerializer
 
 from django.core.exceptions import ObjectDoesNotExist
@@ -237,6 +244,44 @@ def coach_profile(request):
         "Content": CoachSerializer(coach).data,
         "Code": "HTTP_200_OK",
     }, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+def exercise_analysis(request, exerciseId):
+
+    time = int(request.data['time'])
+    first_half = bool(request.data['first_half'])
+    exercise_category = request.data['exercise_category']
+    landmarks_coordinates = [request.data[str(i)] for i in range(33)]
+
+    smartmoveConfig = apps.get_app_config('SmartMove')
+
+    if (exercise_category, first_half) not in smartmoveConfig.knn_models:
+        return Response(data={"error_msg": f"The specified exercise {exercise_category} is not supported."}, status=status.HTTP_400_BAD_REQUEST)
+    
+    knn_model = smartmoveConfig.knn_models[(exercise_category, first_half == 1)]
+
+    if knn_model:
+        landmark_angles = landmark_list_angles([
+            LandmarkData(visibility=None, **coordinates) for coordinates in landmarks_coordinates
+        ])
+        correctness, most_divergent_angle_value, most_divergent_angle_idx = knn_model.correctness(landmark_angles)
+        progress = knn_model.progress(landmark_angles)
+    else:
+        # TODO: error response
+        return Response(data={"error_msg": f"The system is not trained for exercise {exercise_category}."}, status=status.HTTP_400_BAD_REQUEST)
+
+    finished_repetition = False
+    if progress > 0.95:
+        first_half = not first_half
+        if first_half:
+            finished_repetition = True
+
+    # Convert to Python data types that can then be easily rendered into JSON (Example)
+    report = RealTimeReport.objects.create(correctness=correctness, progress=progress, finished_repetition=finished_repetition, first_half=first_half)
+    response = RealTimeReportSerializer(report)
+
+    return Response(response.data, status=status.HTTP_200_OK)
 
 
 def is_trainee(user):
@@ -766,3 +811,4 @@ def coach_assign_exercise(request, traineeId, exerciseId):
             "Message": "Trainee does not exist",
             "Code": "HTTP_400_BAD_REQUEST",
         }, status=status.HTTP_400_BAD_REQUEST)
+        

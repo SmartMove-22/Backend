@@ -20,7 +20,6 @@ class Coach(models.Model):
 
     # One-to-many relationship with Exercise
 
-
 class Exercise(models.Model):
 
     id = models.AutoField(primary_key=True)
@@ -85,3 +84,12 @@ class Report(models.Model):
 
     def __str__(self):
         return self.trainee.username + " - " + str(self.date)
+
+
+class RealTimeReport(models.Model):
+
+    id = models.AutoField(primary_key=True)
+    correctness = models.FloatField()
+    progress = models.FloatField()
+    finished_repetition = models.BooleanField()
+    first_half = models.BooleanField()
