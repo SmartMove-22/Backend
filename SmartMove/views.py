@@ -191,12 +191,12 @@ def manage_exercise(request):
             name = request.data['name']
             # create a category
             category = set_category(request.data['category'])
-            # img =  request.data['img']
+            img =  request.data['img']
             sets = request.data['sets']
             reps = request.data['reps']
             calories = request.data['calories']
             # create a Exercise
-            exe = Exercise.objects.create(coach_username=username, name=name, category=category, sets=sets, reps=reps, calories=calories)
+            exe = Exercise.objects.create(coach=coach, img=img, name=name, category=category, sets=sets, reps=reps, calories=calories)
             return Response({
                 "Message": "Exercise created",
                 "Content": ExerciseSerializer(exe).data,
@@ -209,7 +209,7 @@ def manage_exercise(request):
             },status=status.HTTP_400_BAD_REQUEST)      
     if request.method=='GET':
         try:
-            exer = Exercise.objects.filter(coach_username=username) 
+            exer = Exercise.objects.filter(coach=coach) 
             return Response({
                 "Message": "Exercises Obtained",
                 "Content": ExerciseSerializer(exer, many=True).data,
@@ -224,7 +224,7 @@ def manage_exercise(request):
         try:
             id_exer = request.data['id']
             # create a Exercise
-            exe = Exercise.objects.get(id=id_exer, coach_username=username)
+            exe = Exercise.objects.get(id=id_exer, coach=coach)
             exe.delete()
             return Response({
                 "Message": "Exercise Deleted",
