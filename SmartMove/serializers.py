@@ -1,7 +1,15 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
 
-from SmartMove.models import Trainee, Coach, Exercise, Report, AssignedExercise, Category
+from SmartMove.models import Trainee, Coach, AssignedExercise, Exercise, Report, Category, RealTimeReport
+
+
+class RealTimeReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RealTimeReport
+        fields = ('id', 'correctness', 'progress', 'finished_repetition', 'first_half',
+            'most_divergent_angle_landmark_first', 'most_divergent_angle_landmark_middle',
+            'most_divergent_angle_landmark_last', 'most_divergent_angle_value')
 
 
 class UserSerializer(serializers.ModelSerializer):

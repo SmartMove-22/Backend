@@ -1,0 +1,46 @@
+version: "3.9"
+   
+services:
+  mongodb:
+    image: mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./data/mongo:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=mongo
+      - MONGO_INITDB_ROOT_PASSWORD=mongo
+  db:
+    image: postgres
+    volumes:
+      - ./data/db:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+  api:
+    build: .
+    command: >
+        sh -c "export MONGO_USER=$$(cat /run/secrets/mongo_user)
+        && export MONGO_PASS=$$(cat /run/secrets/mongo_pass)
+        && python manage.py makemigrations
+        && python manage.py migrate
+        && python manage.py runserver 0.0.0.0:80"
+    volumes:
+      - .:/code
+    ports:
+      - "80:80"
+    secrets:
+     - mongo_user
+     - mongo_pass
+    environment:
+      - POSTGRES_NAME=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    depends_on:
+      - db
+      - mongodb
+
+
