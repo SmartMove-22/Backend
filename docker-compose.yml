@@ -25,7 +25,6 @@ services:
     command: >
         sh -c "export MONGO_USER=$$(cat /run/secrets/mongo_user)
         && export MONGO_PASS=$$(cat /run/secrets/mongo_pass)
-        && echo $$MONGO_PASS
         && python manage.py makemigrations
         && python manage.py migrate
         && python manage.py runserver 0.0.0.0:80"
