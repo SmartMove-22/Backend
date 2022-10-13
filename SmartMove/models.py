@@ -93,3 +93,7 @@ class RealTimeReport(models.Model):
     progress = models.FloatField()
     finished_repetition = models.BooleanField()
     first_half = models.BooleanField()
+    most_divergent_angle_landmark_first = models.IntegerField(),
+    most_divergent_angle_landmark_middle = models.IntegerField(),
+    most_divergent_angle_landmark_last = models.IntegerField(),
+    most_divergent_angle_value = models.FloatField()

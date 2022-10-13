@@ -13,7 +13,7 @@ from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
 from .smart_move_analysis.reference_store import LandmarkData
-from .smart_move_analysis.utils import landmark_list_angles
+from .smart_move_analysis.utils import get_landmarks_from_angle, landmark_list_angles
 
 from SmartMove.models import RealTimeReport, Trainee, Coach, Report, Exercise, Category, AssignedExercise
 from SmartMove.serializers import RealTimeReportSerializer, UserSerializer, TraineeSerializer, CoachSerializer, ExerciseSerializer, \
@@ -271,6 +271,8 @@ def exercise_analysis(request, exerciseId):
         # TODO: error response
         return Response(data={"error_msg": f"The system is not trained for exercise {exercise_category}."}, status=status.HTTP_400_BAD_REQUEST)
 
+    landmark_first, landmark_middle, landmark_last = get_landmarks_from_angle(most_divergent_angle_idx)
+
     finished_repetition = False
     if progress > 0.95:
         first_half = not first_half
@@ -278,7 +280,15 @@ def exercise_analysis(request, exerciseId):
             finished_repetition = True
 
     # Convert to Python data types that can then be easily rendered into JSON (Example)
-    report = RealTimeReport.objects.create(correctness=correctness, progress=progress, finished_repetition=finished_repetition, first_half=first_half)
+    report = RealTimeReport.objects.create(
+        correctness=correctness,
+        progress=progress,
+        finished_repetition=finished_repetition,
+        first_half=first_half,
+        most_divergent_angle_landmark_first=landmark_first,
+        most_divergent_angle_landmark_middle=landmark_middle,
+        most_divergent_angle_landmark_last=landmark_last,
+        most_divergent_angle_value=most_divergent_angle_value)
     response = RealTimeReportSerializer(report)
 
     return Response(response.data, status=status.HTTP_200_OK)

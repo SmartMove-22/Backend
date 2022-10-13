@@ -7,7 +7,9 @@ from SmartMove.models import Trainee, Coach, Exercise, Report, RealTimeReport
 class RealTimeReportSerializer(serializers.ModelSerializer):
     class Meta:
         model = RealTimeReport
-        fields = ('id', 'correctness', 'progress', 'finished_repetition', 'first_half')
+        fields = ('id', 'correctness', 'progress', 'finished_repetition', 'first_half',
+            'most_divergent_angle_landmark_first', 'most_divergent_angle_landmark_middle',
+            'most_divergent_angle_landmark_last', 'most_divergent_angle_value')
 
 
 class UserSerializer(serializers.ModelSerializer):
