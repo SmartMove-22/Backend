@@ -15,9 +15,12 @@ class Category(models.Model):
 class Exercise(models.Model):
 
     id = models.AutoField(primary_key=True)
-    # One-to-many relationship with Coach
+    
+    # Many-to-one relationship with Coach
+    coach = models.ForeignKey(Coach, on_delete=models.CASCADE, null=True)
+    
     name = models.CharField(max_length=50)
-    image = models.FileField()
+    image = models.CharField(max_length=150, null=True)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
     sets = models.IntegerField()
     reps = models.IntegerField()
@@ -45,8 +48,7 @@ class Coach(models.Model):
 
     # One-to-many relationship with Trainee
 
-    # Many-to-many relationship with Exercise
-    coach_exercises = models.ManyToManyField(Exercise)
+    # One-to-many relationship with Exercise
 
 
 class Trainee(models.Model):
