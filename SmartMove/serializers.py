@@ -1,7 +1,7 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
 
-from SmartMove.models import RealTimeReport, Trainee, Coach
+from SmartMove.models import Trainee, Coach, Exercise, Report, RealTimeReport
 
 
 class RealTimeReportSerializer(serializers.ModelSerializer):
@@ -19,10 +19,22 @@ class UserSerializer(serializers.ModelSerializer):
 class TraineeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Trainee
-        fields = ('user', 'weight', 'height')
+        fields = ('user', 'trainee_coach', 'assigned_exercises', 'weight', 'height')
 
 
 class CoachSerializer(serializers.ModelSerializer):
     class Meta:
         model = Coach
-        fields = ('user')
+        fields = ('user', 'coach_exercises')
+
+
+class ExerciseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Exercise
+        fields = ('name', 'category', 'sets', 'reps', 'calories')
+
+
+class ReportSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Report
+        fields = ('trainee', 'exercises', 'date', 'completed', 'correctness', 'performance', 'improvement', 'calories_burned')

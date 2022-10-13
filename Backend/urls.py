@@ -24,6 +24,13 @@ urlpatterns = [
     path('user/logout', views.logout),
     path('user/profile', views.profile),
     path('trainee/profile', views.trainee_profile),
+    path('trainee/profile/weight', views.trainee_weight),
+    path('trainee/profile/height', views.trainee_height),
+    path('trainee/coaches', views.trainee_coaches),
+    path('trainee/coach', views.trainee_coach),
+    path('trainee/exercises', views.assigned_exercises),
+    path('trainee/report', views.exercises_report),
     path('coach/profile', views.coach_profile),
     path('trainee/exercise/<int:exerciseId>/data', views.exercise_analysis),
+    path('coach/exercises', views.coach_assigned_exercises),
 ]
