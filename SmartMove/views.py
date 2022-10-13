@@ -191,7 +191,11 @@ def manage_exercise(request):
             name = request.data['name']
             # create a category
             category = set_category(request.data['category'])
-            img =  request.data['img']
+            
+            if 'img' in request.data:
+                img =  request.data['img']
+            else:
+                img = None
             sets = request.data['sets']
             reps = request.data['reps']
             calories = request.data['calories']
