@@ -20,7 +20,6 @@ from SmartMove.serializers import RealTimeReportSerializer, UserSerializer, Trai
 from django.core.exceptions import ObjectDoesNotExist
 
 import datetime
-from datetime import datetime
 
 all_tokens = {}
 
@@ -1041,5 +1040,177 @@ def exercises_categories(request):
         Category.objects.get_or_create(category=category, sub_category=sub_category)
         return Response({
             "Message": "Category Created",
+            "Code": "HTTP_200_OK",
+        }, status=status.HTTP_200_OK)
+
+
+# --- Potential
+
+def obtain_potential(trainee):
+
+    try:
+        exercises = AssignedExercise.objects.filter(trainee=trainee)
+
+        height = trainee.height
+        weight = trainee.weight
+
+        # IMC Factor
+        imc = 0
+        if height != 0 and weight != 0:
+            height_m = height / 100
+            imc = weight / (height_m * height_m)
+
+        # Heartbeats
+        heartbeats = 0
+        for exercise in exercises:
+            if exercise.completed:
+                heartbeats += exercise.heartbeats
+
+        # Reports
+        reports = Report.objects.filter(trainee=trainee)
+
+        # Update reports
+        for report in reports:
+            # Update correctness, performance, improvement and calories_burned
+            correctness = performance = improvement = calories_burned = 0
+
+            for exercise in report.exercises.all():
+                correctness += exercise.correctness
+                performance += exercise.performance
+                improvement += exercise.improvement
+                calories_burned += exercise.calories_burned
+
+            correctness /= len(report.exercises.all())
+            performance /= len(report.exercises.all())
+            improvement /= len(report.exercises.all())
+
+            report.correctness = correctness
+            report.performance = performance
+            report.improvement = improvement
+            report.calories_burned = calories_burned
+
+            report.save()
+
+        average_correctness = average_performance = average_improvement = all_calories_burned = 0
+
+        if len(reports) != 0:
+
+            for report in reports:
+                average_improvement += report.improvement
+                average_performance += report.performance
+                average_correctness += report.correctness
+                all_calories_burned += report.calories_burned
+
+            average_correctness /= len(reports)
+            average_performance /= len(reports)
+            average_improvement /= len(reports)
+
+        elif imc != 0 and heartbeats == 0:
+            potential = 0.2 * imc / 100
+            return potential
+
+        if imc != 0 and heartbeats != 0:
+            potential = -0.2 * imc / 10 - 0.4 * heartbeats / 100 + average_correctness + average_performance + average_improvement + all_calories_burned / 1000
+        elif imc != 0:
+            potential = -0.2 * imc / 10 + 1.5 * average_correctness + 1.5 * average_performance + 1.5 * average_improvement + all_calories_burned / 1000
+        else:
+            potential = None
+
+        return potential
+
+    except ObjectDoesNotExist:
+        return None
+
+
+@api_view(['GET'])
+def trainee_potential(request):
+    check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    username = get_username(request)
+
+    user = User.objects.get(username=username)
+    # Check if trainee
+    if obtain_user_type(username) != "TRAINEE":
+        return Response({
+            "Message": "User is not a trainee",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        trainee = Trainee.objects.get(user=user)
+        potential = obtain_potential(trainee)
+
+        if potential:
+            return Response({
+                "Message": "Potential Obtained",
+                "Content": potential,
+                "Code": "HTTP_200_OK",
+            }, status=status.HTTP_200_OK)
+
+        return Response({
+            "Message": "Unable to obtain potential",
+            "Code": "HTTP_200_OK",
+        }, status=status.HTTP_200_OK)
+
+    except ObjectDoesNotExist:
+        return Response({
+            "Message": "Unable to obtain potential",
+            "Code": "HTTP_200_OK",
+        }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+def coach_trainee_potential(request, traineeId):
+    check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    username = get_username(request)
+
+    user = User.objects.get(username=username)
+    # Check if coach
+    if obtain_user_type(username) != "COACH":
+        return Response({
+            "Message": "User is not a coach",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    coach = Coach.objects.get(user=user)
+
+    try:
+
+        try:
+            trainee = Trainee.objects.get(user=User.objects.get(username=traineeId))
+            potential = obtain_potential(trainee)
+
+            if potential:
+                return Response({
+                    "Message": "Potential Obtained",
+                    "Content": potential,
+                    "Code": "HTTP_200_OK",
+                }, status=status.HTTP_200_OK)
+
+            return Response({
+                "Message": "Unable to obtain potential",
+                "Code": "HTTP_200_OK",
+            }, status=status.HTTP_200_OK)
+
+        except ObjectDoesNotExist:
+            return Response({
+                "Message": "Trainee does not exist",
+                "Code": "HTTP_400_BAD_REQUEST",
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+    except ObjectDoesNotExist:
+        return Response({
+            "Message": "Unable to obtain potential",
             "Code": "HTTP_200_OK",
         }, status=status.HTTP_200_OK)
