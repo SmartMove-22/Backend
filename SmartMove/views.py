@@ -257,7 +257,13 @@ def exercise_analysis(request, exerciseId):
     time = int(request.data['time'])
     first_half = bool(request.data['first_half'])
     exercise_category = request.data['exercise_category']
-    landmarks_coordinates = [request.data[str(i)] for i in range(33)]
+
+    all_landmarks = request.data['landmarks_coordinates']
+    landmarks_coordinates = []
+    for i in range(33):
+        coord = [coord for coord in all_landmarks if coord["id"] == str(i)]
+        if coord:
+            landmarks_coordinates.append({"x": coord[0]["x"], "y": coord[0]["y"], "z": coord[0]["z"]})
 
     smartmoveConfig = apps.get_app_config('SmartMove')
 
