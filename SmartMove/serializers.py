@@ -54,7 +54,7 @@ class AssignedExerciseSerializer(serializers.ModelSerializer):
 class ReportSerializer(serializers.ModelSerializer):
     class Meta:
         model = Report
-        fields = ('id', 'trainee', 'exercises', 'date', 'completed', 'correctness', 'performance', 'improvement',
+        fields = ('id', 'trainee', 'exercises', 'date', 'correctness', 'performance', 'improvement',
                   'calories_burned')
 
 
