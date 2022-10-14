@@ -1,3 +1,5 @@
+from email.mime import image
+from urllib import request
 from django.shortcuts import render
 from rest_framework import status
 from django.contrib.auth.models import User
@@ -1020,3 +1022,59 @@ def exercises_categories(request):
             "Message": "Category Created",
             "Code": "HTTP_200_OK",
         }, status=status.HTTP_200_OK)
+        
+        
+        
+## My code
+
+@api_view(['PATCH'])
+def update_assignedExercise(request,traineeId, exerciseId):
+    
+    try:
+
+        try:
+            trainee = Trainee.objects.get(user=User.objects.get(username=traineeId))
+        except ObjectDoesNotExist:
+            return Response({
+                "Message": "Trainee does not exist",
+                "Code": "HTTP_400_BAD_REQUEST",
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            exercise = Exercise.objects.get(id=exerciseId)
+            assigned_exercise = AssignedExercise.objects.get(exercise=exercise, trainee=trainee)
+        except ObjectDoesNotExist:
+            return Response({
+                "Message": "Exercise does not exist",
+                "Code": "HTTP_400_BAD_REQUEST",
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if "completed" not in request.data or "correctness" not in request.data or "performance" not in request.data \
+            or "improvement" not in request.data or "calories_burned" not in request.data or "pacing" not in request.data or "bpms" not in request.data:
+                return Response({
+                    "Message": "Please provide missing fields",
+                    "Code": "HTTP_400_BAD_REQUEST",
+                }, status=status.HTTP_400_BAD_REQUEST)
+                
+        assigned_exercise.completed = request.data['completed']
+        assigned_exercise.correctness = request.data['correctness']
+        assigned_exercise.performance = request.data['performance']
+        assigned_exercise.improvement = request.data['improvement']
+        assigned_exercise.calories_burned = request.data['calories_burned']
+        assigned_exercise.pacing = request.data['pacing']
+        assigned_exercise.bpms = request.data['bpms']
+        assigned_exercise.save()
+
+        return Response({
+            "Message": "Exercise Updated Successfully",
+            "Code": "HTTP_200_OK",
+        }, status=status.HTTP_200_OK)
+
+    except ObjectDoesNotExist:
+        return Response({
+            "Message": "Assigned Exercise Not Found",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+  
+    
+
