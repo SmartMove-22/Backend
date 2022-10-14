@@ -10,8 +10,8 @@ from django.contrib.auth import authenticate
 
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
-from .smart_move_analysis.reference_store import LandmarkData
-from .smart_move_analysis.utils import get_landmarks_from_angle, landmark_list_angles
+#from .smart_move_analysis.reference_store import LandmarkData
+#from .smart_move_analysis.utils import get_landmarks_from_angle, landmark_list_angles
 
 from SmartMove.models import RealTimeReport, Trainee, Coach, Report, Exercise, Category, AssignedExercise
 from SmartMove.serializers import RealTimeReportSerializer, UserSerializer, TraineeSerializer, CoachSerializer, ExerciseSerializer, \
