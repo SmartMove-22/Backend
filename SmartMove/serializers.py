@@ -34,8 +34,15 @@ class CoachSerializer(serializers.ModelSerializer):
         fields = ['user']
 
 
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ('category', 'sub_category')
+
+
 class ExerciseSerializer(serializers.ModelSerializer):
     coach = CoachSerializer(many=False, read_only=True)
+    category = CategorySerializer(many=False, read_only=True)
 
     class Meta:
         model = Exercise
@@ -56,9 +63,3 @@ class ReportSerializer(serializers.ModelSerializer):
         model = Report
         fields = ('id', 'trainee', 'exercises', 'date', 'correctness', 'performance', 'improvement',
                   'calories_burned')
-
-
-class CategorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Category
-        fields = ('category', 'sub_category')

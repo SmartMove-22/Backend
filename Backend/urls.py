@@ -43,5 +43,6 @@ urlpatterns = [
     path('coach/trainees/<str:traineeId>/exercise/<int:exerciseId>/evaluate', views.evaluate_exercise),
     path('exercises/categories', views.exercises_categories),
     path('exercises/categories/<str:category>', views.exercise_category),
+    path('exercises', views.exercises),
     path('logout', views.logout)
 ]
