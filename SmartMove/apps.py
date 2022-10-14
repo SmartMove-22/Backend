@@ -19,7 +19,7 @@ class SmartmoveConfig(AppConfig):
 
         self.knn_models = {}
         for exercise in self.reference_store.exercises():
-            self.knn_models.extend({exercise_half:KNNRegressor.from_exercise_references(self.reference_store.get(*exercise_half))
+            self.knn_models.update({exercise_half:KNNRegressor.from_exercise_references(self.reference_store.get(*exercise_half))
                 for exercise_half in [
                     (exercise, True), (exercise, False)
                 ]
