@@ -35,6 +35,7 @@ urlpatterns = [
     path('trainee/exercise/<int:exerciseId>/complete', views.update_exercise),
     path('trainee/potential', views.trainee_potential),
     path('coach/profile', views.coach_profile),
+    path('coach/trainees', views.coach_trainees),
     path('coach/trainees/exercises', views.coach_assigned_exercises),
     path('coach/trainees/<str:traineeId>/exercises', views.coach_assigned_exercises_trainee),
     path('coach/trainees/<str:traineeId>/exercise/<int:exerciseId>', views.coach_manage_exercise),

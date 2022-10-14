@@ -744,6 +744,42 @@ def trainee_height(request):
 # --- Coach Endpoints
 
 @api_view(['GET'])
+def coach_trainees(request):
+    check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    username = get_username(request)
+
+    # Check if coach
+    if obtain_user_type(username) != "COACH":
+        return Response({
+            "Message": "User is not a coach",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    user = User.objects.get(username=username)
+    coach = Coach.objects.get(user=user)
+
+    try:
+        trainees = Trainee.objects.filter(trainee_coach=coach)
+        return Response({
+            "Message": "Trainees Retrieved Successfully",
+            "Content": TraineeSerializer(trainees, many=True).data,
+            "Code": "HTTP_200_OK",
+        }, status=status.HTTP_200_OK)
+
+    except ObjectDoesNotExist:
+        return Response({
+            "Message": "No trainees",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
 def coach_assigned_exercises(request):
     check_token(request)
     if not check_token(request):
