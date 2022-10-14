@@ -1114,6 +1114,39 @@ def exercises_categories(request):
         }, status=status.HTTP_200_OK)
 
 
+@api_view(['GET'])
+def exercises(request):
+
+    try:
+        if "category" in request.data:
+            try:
+                category = Category.objects.filter(category=request.data['category'])
+                all_exercises = Exercise.objects.filter(category=category)
+                return Response({
+                        "Message": "Exercises Obtained",
+                        "Content": ExerciseSerializer(all_exercises, many=True).data,
+                        "Code": "HTTP_200_OK",
+                    }, status=status.HTTP_200_OK)
+            except ObjectDoesNotExist:
+                return Response({
+                    "Message": "No exercises",
+                    "Code": "HTTP_400_BAD_REQUEST",
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+        all_exercises = Exercise.objects.all()
+        return Response({
+            "Message": "Exercises Obtained",
+            "Content": ExerciseSerializer(all_exercises, many=True).data,
+            "Code": "HTTP_200_OK",
+        }, status=status.HTTP_200_OK)
+
+    except ObjectDoesNotExist:
+        return Response({
+            "Message": "No exercises",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+
 # --- Potential
 
 def obtain_potential(trainee):
