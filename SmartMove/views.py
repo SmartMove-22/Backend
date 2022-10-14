@@ -591,10 +591,78 @@ def exercises_report(request):
 
 
 @api_view(['PATCH'])
-def update_exercise(request):
+def update_exercise(request, exerciseId):
+    check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
 
-    # pacing
-    pass
+    username = get_username(request)
+
+    # Check if trainee
+    if obtain_user_type(username) != "TRAINEE":
+        return Response({
+            "Message": "User is not a trainee",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    # Get report
+    try:
+        user = User.objects.get(username=username)
+        trainee = Trainee.objects.get(user=user)
+
+        try:
+            assigned_exercise = AssignedExercise.objects.get(trainee=trainee, assigned_id=exerciseId)
+        except ObjectDoesNotExist:
+            return Response({
+                "Message": "Exercise does not exist",
+                "Code": "HTTP_400_BAD_REQUEST",
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if "completed" not in request.data or "correctness" not in request.data or "performance" not in request.data \
+                or "improvement" not in request.data or "calories_burned" not in request.data or "pacing" not in request.data:
+            return Response({
+                "Message": "Please provide missing fields",
+                "Code": "HTTP_400_BAD_REQUEST",
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if not bool(request.data['completed']):
+            return Response({
+                "Message": "Exercise not completed",
+                "Code": "HTTP_400_BAD_REQUEST",
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if assigned_exercise.completed == True:
+            return Response({
+                "Message": "Exercise already completed",
+                "Code": "HTTP_400_BAD_REQUEST",
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        assigned_exercise.completed = bool(request.data['completed'])
+        assigned_exercise.correctness = request.data['correctness']
+        assigned_exercise.performance = request.data['performance']
+        assigned_exercise.improvement = request.data['improvement']
+        assigned_exercise.calories_burned = request.data['calories_burned']
+        assigned_exercise.pacing = request.data['pacing']
+
+        if request.data['bpms']:
+            assigned_exercise.bpms = request.data['bpms']
+
+        assigned_exercise.save()
+
+        return Response({
+            "Message": "Exercise Updated Successfully",
+            "Code": "HTTP_200_OK",
+        }, status=status.HTTP_200_OK)
+
+
+    except ObjectDoesNotExist:
+        return Response({
+            "Message": "No trainee",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['PATCH'])
