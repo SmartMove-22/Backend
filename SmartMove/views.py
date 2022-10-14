@@ -258,19 +258,22 @@ def exercise_analysis(request, exerciseId):
     first_half = bool(request.data['first_half'])
     exercise_category = request.data['exercise_category']
 
-    all_landmarks = request.data['landmarks_coordinates']
+    all_landmarks = request.data['landmarks']
     landmarks_coordinates = []
     for i in range(33):
-        coord = [coord for coord in all_landmarks if coord["id"] == str(i)]
+        coord = [coord for coord in all_landmarks if coord["id"] == i]
         if coord:
             landmarks_coordinates.append({"x": coord[0]["x"], "y": coord[0]["y"], "z": coord[0]["z"]})
+
+    if not landmarks_coordinates:
+        return Response(data={"error_msg": f"No landmarks were specified or were not in the correct format."}, status=status.HTTP_400_BAD_REQUEST)
 
     smartmoveConfig = apps.get_app_config('SmartMove')
 
     if (exercise_category, first_half) not in smartmoveConfig.knn_models:
         return Response(data={"error_msg": f"The specified exercise {exercise_category} is not supported."}, status=status.HTTP_400_BAD_REQUEST)
 
-    knn_model = smartmoveConfig.knn_models[(exercise_category, first_half == 1)]
+    knn_model = smartmoveConfig.knn_models[(exercise_category, first_half)]
 
     if knn_model:
         landmark_angles = landmark_list_angles([
