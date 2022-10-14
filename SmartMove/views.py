@@ -1,5 +1,3 @@
-from email.mime import image
-from urllib import request
 from django.shortcuts import render
 from rest_framework import status
 from django.contrib.auth.models import User
