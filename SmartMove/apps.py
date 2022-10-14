@@ -8,7 +8,7 @@ from .smart_move_analysis.knn import KNNRegressor
 class SmartmoveConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'SmartMove'
-    
+'''    
     reference_store = None
     knn_models = None
 
@@ -24,3 +24,4 @@ class SmartmoveConfig(AppConfig):
                 ('pushup', True), ('pushup', False)
             ]
         }
+'''

@@ -10,8 +10,8 @@ from django.contrib.auth import authenticate
 
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
-#from .smart_move_analysis.reference_store import LandmarkData
-#from .smart_move_analysis.utils import get_landmarks_from_angle, landmark_list_angles
+from .smart_move_analysis.reference_store import LandmarkData
+from .smart_move_analysis.utils import get_landmarks_from_angle, landmark_list_angles
 
 from SmartMove.models import RealTimeReport, Trainee, Coach, Report, Exercise, Category, AssignedExercise
 from SmartMove.serializers import RealTimeReportSerializer, UserSerializer, TraineeSerializer, CoachSerializer, ExerciseSerializer, \
@@ -1049,21 +1049,11 @@ def exercises_categories(request):
 ## My code
 
 @api_view(['PATCH'])
-def update_assignedExercise(request,traineeId, exerciseId):
+def update_assignedExercise(request,assigned_id):
     
     try:
-
         try:
-            trainee = Trainee.objects.get(user=User.objects.get(username=traineeId))
-        except ObjectDoesNotExist:
-            return Response({
-                "Message": "Trainee does not exist",
-                "Code": "HTTP_400_BAD_REQUEST",
-            }, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            exercise = Exercise.objects.get(id=exerciseId)
-            assigned_exercise = AssignedExercise.objects.get(exercise=exercise, trainee=trainee)
+            assigned_exercise = AssignedExercise.objects.get(assigned_id=assigned_id)
         except ObjectDoesNotExist:
             return Response({
                 "Message": "Exercise does not exist",
@@ -1076,7 +1066,7 @@ def update_assignedExercise(request,traineeId, exerciseId):
                     "Message": "Please provide missing fields",
                     "Code": "HTTP_400_BAD_REQUEST",
                 }, status=status.HTTP_400_BAD_REQUEST)
-                
+        
         assigned_exercise.completed = request.data['completed']
         assigned_exercise.correctness = request.data['correctness']
         assigned_exercise.performance = request.data['performance']

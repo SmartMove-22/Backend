@@ -40,6 +40,6 @@ urlpatterns = [
     path('coach/trainees/<str:traineeId>/exercise/<int:exerciseId>/evaluate', views.evaluate_exercise),
     path('exercises/categories', views.exercises_categories),
     path('exercises/categories/<str:category>', views.exercise_category),
-    path('trainee//<str:traineeId>/exercise/<int:exerciseId>', views.update_assignedExercise),
+    path('trainee/<int:assigned_id>', views.update_assignedExercise),
     path('logout', views.logout)
 ]
