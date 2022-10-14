@@ -1,10 +1,8 @@
 from django.shortcuts import render
-from django.apps import apps
-from rest_framework import status
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth.models import User
+from django.apps import apps
+from rest_framework import status
 
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -13,21 +11,21 @@ from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
 from .smart_move_analysis.reference_store import LandmarkData
-from .smart_move_analysis.utils import landmark_list_angles
+from .smart_move_analysis.utils import get_landmarks_from_angle, landmark_list_angles
 
 from SmartMove.models import RealTimeReport, Trainee, Coach, Report, Exercise, Category, AssignedExercise
 from SmartMove.serializers import RealTimeReportSerializer, UserSerializer, TraineeSerializer, CoachSerializer, ExerciseSerializer, \
-    ReportSerializer, AssignedExerciseSerializer
+    ReportSerializer, AssignedExerciseSerializer, CategorySerializer
 
 from django.core.exceptions import ObjectDoesNotExist
 
 import datetime
+from datetime import datetime
 
 all_tokens = {}
 
 
 def get_username(request):
-
     token = request.headers['Authorization'].split(' ')[1]
     username = [key for key, value in all_tokens.items() if value == token]
     if len(username) == 0:
@@ -49,7 +47,8 @@ def get_tokens_for_user(user):
     return token
 
 
-def token_is_valid(request):
+def check_token(request):
+
     # Check headers
     if "Authorization" not in request.headers or len(request.headers["Authorization"].split()) != 2:
         return False
@@ -64,14 +63,6 @@ def token_is_valid(request):
         return False
 
     return True
-
-
-def check_token(request):
-    if not token_is_valid(request):
-        return Response({
-            "Message": "Invalid token",
-            "Code": "HTTP_400_BAD_REQUEST",
-        }, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['POST'])
@@ -144,9 +135,17 @@ def login(request):
 
 @api_view(['POST'])
 def logout(request):
+    global all_tokens
+
     check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
 
     username = get_username(request)
+
     all_tokens[username] = None
 
     return Response({
@@ -158,8 +157,12 @@ def logout(request):
 @api_view(['GET'])
 def profile(request):
     check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
 
-    # Get username
     username = get_username(request)
 
     user = User.objects.get(username=username)
@@ -179,8 +182,12 @@ def profile(request):
 @api_view(['GET'])
 def trainee_profile(request):
     check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
 
-    # Get username
     username = get_username(request)
 
     user = User.objects.get(username=username)
@@ -214,17 +221,15 @@ def trainee_profile(request):
 @api_view(['GET'])
 def coach_profile(request):
     check_token(request)
-
-    # Get username
-    username = get_username(request)
-
-    user = User.objects.get(username=username)
-    if not user:
+    if not check_token(request):
         return Response({
-            "Message": "User doesn't exist",
+            "Message": "Invalid token",
             "Code": "HTTP_400_BAD_REQUEST",
         }, status=status.HTTP_400_BAD_REQUEST)
 
+    username = get_username(request)
+
+    user = User.objects.get(username=username)
     try:
         coach = Coach.objects.get(user=user)
     except ObjectDoesNotExist:
@@ -252,13 +257,19 @@ def exercise_analysis(request, exerciseId):
     time = int(request.data['time'])
     first_half = bool(request.data['first_half'])
     exercise_category = request.data['exercise_category']
-    landmarks_coordinates = [request.data[str(i)] for i in range(33)]
+
+    all_landmarks = request.data['landmarks_coordinates']
+    landmarks_coordinates = []
+    for i in range(33):
+        coord = [coord for coord in all_landmarks if coord["id"] == str(i)]
+        if coord:
+            landmarks_coordinates.append({"x": coord[0]["x"], "y": coord[0]["y"], "z": coord[0]["z"]})
 
     smartmoveConfig = apps.get_app_config('SmartMove')
 
     if (exercise_category, first_half) not in smartmoveConfig.knn_models:
         return Response(data={"error_msg": f"The specified exercise {exercise_category} is not supported."}, status=status.HTTP_400_BAD_REQUEST)
-    
+
     knn_model = smartmoveConfig.knn_models[(exercise_category, first_half == 1)]
 
     if knn_model:
@@ -271,6 +282,8 @@ def exercise_analysis(request, exerciseId):
         # TODO: error response
         return Response(data={"error_msg": f"The system is not trained for exercise {exercise_category}."}, status=status.HTTP_400_BAD_REQUEST)
 
+    landmark_first, landmark_middle, landmark_last = get_landmarks_from_angle(most_divergent_angle_idx)
+
     finished_repetition = False
     if progress > 0.95:
         first_half = not first_half
@@ -278,7 +291,15 @@ def exercise_analysis(request, exerciseId):
             finished_repetition = True
 
     # Convert to Python data types that can then be easily rendered into JSON (Example)
-    report = RealTimeReport.objects.create(correctness=correctness, progress=progress, finished_repetition=finished_repetition, first_half=first_half)
+    report = RealTimeReport.objects.create(
+        correctness=correctness,
+        progress=progress,
+        finished_repetition=finished_repetition,
+        first_half=first_half,
+        most_divergent_angle_landmark_first=landmark_first,
+        most_divergent_angle_landmark_middle=landmark_middle,
+        most_divergent_angle_landmark_last=landmark_last,
+        most_divergent_angle_value=most_divergent_angle_value)
     response = RealTimeReportSerializer(report)
 
     return Response(response.data, status=status.HTTP_200_OK)
@@ -322,9 +343,14 @@ def obtain_user_type(username):
 @api_view(['GET'])
 def user_type(request):
     check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
 
-    # Get username
     username = get_username(request)
+
     account_type = obtain_user_type(username)
 
     if account_type:
@@ -345,8 +371,12 @@ def user_type(request):
 @api_view(['GET'])
 def trainee_coaches(request):
     check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
 
-    # Get username
     username = get_username(request)
 
     # Check if trainee
@@ -376,8 +406,12 @@ def trainee_coaches(request):
 @api_view(['GET', 'PUT', 'DELETE'])
 def trainee_coach(request):
     check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
 
-    # Get username
     username = get_username(request)
 
     # Check if trainee
@@ -463,6 +497,11 @@ def trainee_coach(request):
 @api_view(['GET'])
 def assigned_exercises(request):
     check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
 
     username = get_username(request)
 
@@ -476,11 +515,11 @@ def assigned_exercises(request):
     try:
         user = User.objects.get(username=username)
         trainee = Trainee.objects.get(user=user)
-        exercises = AssignedExercise.objects.get(trainee=trainee)
+        exercises = AssignedExercise.objects.filter(trainee=trainee)
 
         return Response({
             "Message": "Exercises Obtained",
-            "Content": ExerciseSerializer(exercises, many=True).data,
+            "Content": AssignedExerciseSerializer(exercises, many=True).data,
             "Code": "HTTP_200_OK",
         }, status=status.HTTP_200_OK)
 
@@ -494,8 +533,12 @@ def assigned_exercises(request):
 @api_view(['GET'])
 def exercises_report(request):
     check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
 
-    # Get username
     username = get_username(request)
 
     # Check if trainee
@@ -510,30 +553,60 @@ def exercises_report(request):
         user = User.objects.get(username=username)
         trainee = Trainee.objects.get(user=user)
 
-        date = datetime.datetime.now()
-        if "date" in request.data:
-            date = request.data['date']
+        date = datetime.now()
+        if "timestamp" in request.data:
+            date = date.fromtimestamp(request.data['timestamp'])
 
-        reports = Report.objects.get(trainee=trainee, date=date)
+        report = Report.objects.get(trainee=trainee, date=date)
+
+        # Update correctness, performance, improvement and calories_burned
+        correctness = performance = improvement = calories_burned = 0
+        for exercise in report.exercises.all():
+            correctness += exercise.correctness
+            performance += exercise.performance
+            improvement += exercise.improvement
+            calories_burned += exercise.calories_burned
+
+        correctness /= len(report.exercises.all())
+        performance /= len(report.exercises.all())
+        improvement /= len(report.exercises.all())
+
+        report.correctness = correctness
+        report.performance = performance
+        report.improvement = improvement
+        report.calories_burned = calories_burned
+
+        report.save()
 
         return Response({
-            "Message": "Report Obtained for " + date,
-            "Content": ReportSerializer(reports, many=True).data,
+            "Message": "Report Obtained for " + str(date),
+            "Content": ReportSerializer(report).data,
             "Code": "HTTP_200_OK",
         }, status=status.HTTP_200_OK)
 
     except ObjectDoesNotExist:
         return Response({
-            "Message": "No exercises",
+            "Message": "No reports for " + str(date),
             "Code": "HTTP_200_OK",
         }, status=status.HTTP_200_OK)
 
 
 @api_view(['PATCH'])
+def update_exercise(request):
+
+    # pacing
+    pass
+
+
+@api_view(['PATCH'])
 def trainee_weight(request):
     check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
 
-    # Get username
     username = get_username(request)
 
     # Check if trainee
@@ -565,8 +638,12 @@ def trainee_weight(request):
 @api_view(['PATCH'])
 def trainee_height(request):
     check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
 
-    # Get username
     username = get_username(request)
 
     # Check if trainee
@@ -600,8 +677,12 @@ def trainee_height(request):
 @api_view(['GET'])
 def coach_assigned_exercises(request):
     check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
 
-    # Get username
     username = get_username(request)
 
     # Check if coach
@@ -615,10 +696,12 @@ def coach_assigned_exercises(request):
     coach = Coach.objects.get(user=user)
 
     try:
-        exercises = AssignedExercise.objects.get(coach=coach)
+        exercises = Exercise.objects.filter(coach=coach)
+        all_assigned_exercises = AssignedExercise.objects.filter(exercise__in=exercises)
+
         return Response({
             "Message": "Assigned Exercises Obtained",
-            "Content": AssignedExerciseSerializer(exercises, many=True).data,
+            "Content": AssignedExerciseSerializer(all_assigned_exercises, many=True).data,
             "Code": "HTTP_200_OK",
         }, status=status.HTTP_200_OK)
 
@@ -630,11 +713,14 @@ def coach_assigned_exercises(request):
 
 
 @api_view(['GET'])
-def coach_exercises_for_trainee(request):
-
+def coach_assigned_exercises_trainee(request, traineeId):
     check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
 
-    # Get username
     username = get_username(request)
 
     # Check if coach
@@ -647,21 +733,13 @@ def coach_exercises_for_trainee(request):
     user = User.objects.get(username=username)
     coach = Coach.objects.get(user=user)
 
-    if "trainee_username" not in request.data:
-        return Response({
-            "Message": "Missing trainee",
-            "Code": "HTTP_400_BAD_REQUEST",
-        }, status=status.HTTP_400_BAD_REQUEST)
-
-    trainee_username = request.data['trainee_username']
-
     try:
-        trainee = Trainee.objects.get(user=User.objects.get(username=trainee_username))
-        exercises = AssignedExercise.objects.filter(trainee=trainee, coach=coach)
+        trainee = Trainee.objects.get(user=User.objects.get(username=traineeId))
+        exercises = AssignedExercise.objects.filter(trainee=trainee, exercise__coach=coach)
 
         return Response({
             "Message": "Exercises Obtained",
-            "Content": ExerciseSerializer(exercises, many=True).data,
+            "Content": AssignedExerciseSerializer(exercises, many=True).data,
             "Code": "HTTP_200_OK",
         }, status=status.HTTP_200_OK)
 
@@ -675,8 +753,12 @@ def coach_exercises_for_trainee(request):
 @api_view(['GET', 'POST', 'DELETE'])
 def coach_exercises(request):
     check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
 
-    # Get username
     username = get_username(request)
 
     # Check if coach
@@ -725,7 +807,7 @@ def coach_exercises(request):
 
         exercise_category = Category.objects.create(category=category, sub_category=sub_category)
         exercise = Exercise.objects.create(coach=coach, name=name, category=exercise_category,
-                                        sets=sets, reps=reps, calories=calories)
+                                           sets=sets, reps=reps, calories=calories)
 
         exercise.save()
 
@@ -760,12 +842,15 @@ def coach_exercises(request):
             }, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['POST'])
-def coach_assign_exercise(request, traineeId, exerciseId):
-
+@api_view(['POST', 'DELETE'])
+def coach_manage_exercise(request, traineeId, exerciseId):
     check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
 
-    # Get username
     username = get_username(request)
 
     # Check if coach
@@ -780,9 +865,13 @@ def coach_assign_exercise(request, traineeId, exerciseId):
 
     try:
         trainee = Trainee.objects.get(user=User.objects.get(username=traineeId))
+        if trainee.trainee_coach != coach:
+            return Response({
+                "Message": "Trainee is not assigned to you",
+                "Code": "HTTP_400_BAD_REQUEST",
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-
             exercise = Exercise.objects.get(id=exerciseId)
 
             if exercise.coach != coach:
@@ -791,14 +880,29 @@ def coach_assign_exercise(request, traineeId, exerciseId):
                     "Code": "HTTP_400_BAD_REQUEST",
                 }, status=status.HTTP_400_BAD_REQUEST)
 
-            assigned_exercise = AssignedExercise(exercise_ptr=exercise)
-            assigned_exercise.trainee.add(trainee)
-            assigned_exercise.save()
+            if request.method == 'POST':
 
-            return Response({
-                "Message": "Exercise Assigned Successfully",
-                "Code": "HTTP_200_OK",
-            }, status=status.HTTP_200_OK)
+                assigned_exercise = AssignedExercise.objects.get_or_create(exercise=exercise, trainee=trainee)[0]
+                assigned_exercise.save()
+
+                report = Report.objects.get_or_create(trainee=trainee, date=datetime.datetime.now())[0]
+                report.exercises.add(assigned_exercise)
+                report.save()
+
+                return Response({
+                    "Message": "Exercise Assigned Successfully",
+                    "Code": "HTTP_200_OK",
+                }, status=status.HTTP_200_OK)
+
+            elif request.method == 'DELETE':
+
+                assigned_exercise = AssignedExercise.objects.get(exercise=exercise, trainee=trainee)
+                assigned_exercise.delete()
+
+                return Response({
+                    "Message": "Exercise Unassigned Successfully",
+                    "Code": "HTTP_200_OK",
+                }, status=status.HTTP_200_OK)
 
         except ObjectDoesNotExist:
             return Response({
@@ -811,4 +915,131 @@ def coach_assign_exercise(request, traineeId, exerciseId):
             "Message": "Trainee does not exist",
             "Code": "HTTP_400_BAD_REQUEST",
         }, status=status.HTTP_400_BAD_REQUEST)
-        
+
+
+@api_view(['PATCH'])
+def evaluate_exercise(request, traineeId, exerciseId):
+    check_token(request)
+    if not check_token(request):
+        return Response({
+            "Message": "Invalid token",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    username = get_username(request)
+
+    user = User.objects.get(username=username)
+    # Check if coach
+    if obtain_user_type(username) != "COACH":
+        return Response({
+            "Message": "User is not a coach",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        coach = Coach.objects.get(user=user)
+    except ObjectDoesNotExist:
+        return Response({
+            "Message": "Coach doesn't exist",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    if not coach:
+        return Response({
+            "Message": "Coach doesn't exist",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+
+        try:
+            trainee = Trainee.objects.get(user=User.objects.get(username=traineeId))
+        except ObjectDoesNotExist:
+            return Response({
+                "Message": "Trainee does not exist",
+                "Code": "HTTP_400_BAD_REQUEST",
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            exercise = Exercise.objects.get(id=exerciseId, coach=coach)
+            assigned_exercise = AssignedExercise.objects.get(exercise=exercise, trainee=trainee)
+        except ObjectDoesNotExist:
+            return Response({
+                "Message": "Exercise does not exist",
+                "Code": "HTTP_400_BAD_REQUEST",
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if "grade" not in request.data:
+            return Response({
+                "Message": "Please provide the grade",
+                "Code": "HTTP_400_BAD_REQUEST",
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        assigned_exercise.grade = request.data['grade']
+        assigned_exercise.save()
+
+        return Response({
+            "Message": "Exercise Evaluated Successfully",
+            "Code": "HTTP_200_OK",
+        }, status=status.HTTP_200_OK)
+
+    except ObjectDoesNotExist:
+        return Response({
+            "Message": "Assigned Exercise Not Found",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+
+# --- Categories
+
+@api_view(['GET'])
+def exercise_category(request, category):
+    try:
+        cat = Category.objects.filter(category=category)
+        return Response({
+            "Message": "Categories Obtained",
+            "Content": CategorySerializer(cat, many=True).data,
+            "Code": "HTTP_200_OK",
+        }, status=status.HTTP_200_OK)
+
+    except ObjectDoesNotExist:
+        return Response({
+            "Message": "No categories",
+            "Code": "HTTP_400_BAD_REQUEST",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET', 'POST'])
+def exercises_categories(request):
+
+    if request.method == 'GET':
+        try:
+            cat = Category.objects.all()
+            return Response({
+                "Message": "Categories Obtained",
+                "Content": CategorySerializer(cat, many=True).data,
+                "Code": "HTTP_200_OK",
+            }, status=status.HTTP_200_OK)
+
+        except ObjectDoesNotExist:
+            return Response({
+                "Message": "No categories",
+                "Code": "HTTP_400_BAD_REQUEST",
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+    elif request.method == 'POST':
+
+        if "category" not in request.data or "sub_category" not in request.data:
+            return Response({
+                "Message": "Please provide the category and sub-category",
+                "Code": "HTTP_400_BAD_REQUEST",
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        category = request.data['category']
+        sub_category = request.data['sub_category']
+
+        Category.objects.get_or_create(category=category, sub_category=sub_category)
+        return Response({
+            "Message": "Category Created",
+            "Code": "HTTP_200_OK",
+        }, status=status.HTTP_200_OK)

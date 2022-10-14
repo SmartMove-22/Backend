@@ -20,6 +20,7 @@ class Coach(models.Model):
 
     # One-to-many relationship with Exercise
 
+
 class Exercise(models.Model):
 
     id = models.AutoField(primary_key=True)
@@ -35,7 +36,7 @@ class Exercise(models.Model):
     calories = models.IntegerField()
 
     def __str__(self):
-        return self.name
+        return str(self.id) + " - " + self.name
 
 
 class Trainee(models.Model):
@@ -54,15 +55,19 @@ class Trainee(models.Model):
 
 
 # Extends Exercise
-class AssignedExercise(Exercise):
+class AssignedExercise(models.Model):
 
-    trainee = models.ManyToManyField(Trainee)
-    # Many-to-many relationship with Trainee
+    exercise = models.ForeignKey(Exercise, on_delete=models.CASCADE)
+    assigned_id = models.AutoField(primary_key=True)
+    trainee = models.ForeignKey(Trainee, on_delete=models.CASCADE)
+
     completed = models.BooleanField(default=False)
     correctness = models.FloatField(default=0)
     performance = models.FloatField(default=0)
     improvement = models.FloatField(default=0)
     calories_burned = models.IntegerField(default=0)
+    pacing = models.FloatField(default=0)
+    bpms = models.IntegerField(default=0)
     grade = models.IntegerField(default=0)
 
 
@@ -73,14 +78,14 @@ class Report(models.Model):
     # Many-to-one relationship with Trainee
     trainee = models.ForeignKey(Trainee, on_delete=models.CASCADE)
     # Many-to-many relationship with Exercise
-    exercises = models.ManyToManyField(Exercise)
+    exercises = models.ManyToManyField(AssignedExercise)
 
     date = models.DateField()
 
-    correctness = models.FloatField()
-    performance = models.FloatField()
-    improvement = models.FloatField()
-    calories_burned = models.IntegerField()
+    correctness = models.FloatField(default=0)
+    performance = models.FloatField(default=0)
+    improvement = models.FloatField(default=0)
+    calories_burned = models.IntegerField(default=0)
 
     def __str__(self):
         return self.trainee.username + " - " + str(self.date)
@@ -93,3 +98,7 @@ class RealTimeReport(models.Model):
     progress = models.FloatField()
     finished_repetition = models.BooleanField()
     first_half = models.BooleanField()
+    most_divergent_angle_landmark_first = models.IntegerField(),
+    most_divergent_angle_landmark_middle = models.IntegerField(),
+    most_divergent_angle_landmark_last = models.IntegerField(),
+    most_divergent_angle_value = models.FloatField()
