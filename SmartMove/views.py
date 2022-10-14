@@ -99,6 +99,7 @@ def register(request):
 
         return Response({
             "Message": "Register Successful",
+            "Type": account_type.upper(),
             "Code": "HTTP_200_OK",
             "Authorization": "Token " + token
         }, status=status.HTTP_200_OK)
@@ -122,6 +123,7 @@ def login(request):
 
         return Response({
             "Message": "Login Successful",
+            "Type": obtain_user_type(username),
             "Code": "HTTP_200_OK",
             "Authorization": "Token " + token
         }, status=status.HTTP_200_OK)
