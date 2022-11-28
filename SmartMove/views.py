@@ -289,7 +289,7 @@ def exercise_analysis(request, exerciseId):
     landmark_first, landmark_middle, landmark_last = get_landmarks_from_angle(most_divergent_angle_idx)
 
     finished_repetition = False
-    if progress > 0.95:
+    if progress > 0.85:
         first_half = not first_half
         if first_half:
             finished_repetition = True

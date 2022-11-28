@@ -3,6 +3,7 @@ from django.apps import AppConfig
 
 from .smart_move_analysis.reference_store import ReferenceStore
 from .smart_move_analysis.knn import KNNRegressor
+from .smart_move_analysis.utils import EXERCISE_ANGLES
 
 
 class SmartmoveConfig(AppConfig):
@@ -19,7 +20,9 @@ class SmartmoveConfig(AppConfig):
 
         self.knn_models = {}
         for exercise in self.reference_store.exercises():
-            self.knn_models.update({exercise_half:KNNRegressor.from_exercise_references(self.reference_store.get(*exercise_half))
+            self.knn_models.update({exercise_half:KNNRegressor.from_exercise_references(
+                    exercise_references=self.reference_store.get(*exercise_half),
+                    exercise_angles=exercise if exercise in EXERCISE_ANGLES else None)
                 for exercise_half in [
                     (exercise, True), (exercise, False)
                 ]
